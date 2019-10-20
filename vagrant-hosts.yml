@@ -30,6 +30,9 @@
 # [1] http://docs.vagrantup.com/v2/synced-folders/basic_usage.html
 ---
 
-- name: srv001
+- name: srv-AD
   ip: 192.168.56.31
+  synced_folders:
+    - src: H:\SHARED
+      dest: C:\tmp
 

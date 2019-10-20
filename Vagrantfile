@@ -5,7 +5,7 @@ require 'rbconfig'
 require 'yaml'
 
 # Set your default base box here
-DEFAULT_BASE_BOX = 'bertvv/centos72'
+DEFAULT_BASE_BOX = 'gusztavvargadr/windows-server'
 
 #
 # No changes needed below this point
@@ -63,6 +63,19 @@ def custom_synced_folders(vm, host)
   end
 end
 
+def extra_vbox_settings(vm)
+  vm.provider :virtualbox do |vbw|
+    vbw.gui = true
+    vbw.customize ["modifyvm", :id, "--vram", "256"]
+    vbw.customize ["modifyvm", :id, "--accelerate3d", "on"]
+    vbw.customize ["modifyvm", :id, "--accelerate2dvideo", "on"]
+    vbw.customize ["modifyvm", :id, "--graphicscontroller", "vboxsvga"]
+    vbw.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+    vbw.customize ["modifyvm", :id, "--clipboard", "bidirectional"]
+    vbw.customize ["modifyvm", :id, "--draganddrop", "bidirectional"]
+  end
+end
+
 # }}}
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
@@ -78,6 +91,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       node.vm.network :private_network, network_options(host)
       custom_synced_folders(node.vm, host)
 
+      extra_vbox_settings(node.vm)
+      
       # Run configuration script for the VM
       node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '.sh'
     end
