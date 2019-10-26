@@ -94,7 +94,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       extra_vbox_settings(node.vm)
       
       # Run configuration script for the VM
-      node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '.sh'
+      node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '.ps1'
+      #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-test.ps1'
     end
   end
 end

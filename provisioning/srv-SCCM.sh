@@ -1,6 +1,6 @@
 #! /usr/bin/bash
 #
-# Provisioning script for srv-AD
+# Provisioning script for serv-SCCM
 
 #------------------------------------------------------------------------------
 # Bash settings
