@@ -63,7 +63,7 @@ function config_nat{
 function config_dhcp{
 
     $User = "localhost\Administrator"
-    $PWord = (ConvertTo-SecureString -Strindns_pu   g "vagrant" -AsPlainText -Force)
+    $PWord = (ConvertTo-SecureString -String "vagrant" -AsPlainText -Force)
     $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
     $cs = New-CimSession -Credential $credential -ComputerName localhost
 
@@ -74,12 +74,6 @@ function config_dhcp{
     # Add-DhcpServerv4ExclusionRange -ScopeID 10.0.0.0 -StartRange 10.0.0.1 -EndRange 10.0.0.15
 }
 
-# operations:
-#Write-Output "wahtwoord = $password, hostname = $hostname"
-#Write-Output "$hostname.$dom_name"
-
-#config_basicsecho 
-#config_adds   
-
-#Disable-NetAdapterBinding -Name "NAT" -ComponentID ms_tcpip6
-#Disable-NetAdapterBinding -Name "HOSTONLY" -ComponentID ms_tcpip6
+# execution:
+config_basics
+config_adds

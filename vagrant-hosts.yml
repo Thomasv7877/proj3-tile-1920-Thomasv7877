@@ -34,11 +34,11 @@
   ip: 192.168.56.31
   synced_folders:
     - src: H:\SHARED
-      dest: C:\VAG
+      dest: C:\Sources
 - name: srv-SCCM
   box: gusztavvargadr/sql-server
   ip: 192.168.56.32
   synced_folders:
     - src: H:\SHARED
-      dest: C:\VAG
+      dest: C:\Sources
 

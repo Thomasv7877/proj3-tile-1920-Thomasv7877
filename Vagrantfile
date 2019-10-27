@@ -73,6 +73,7 @@ def extra_vbox_settings(vm)
     vbw.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
     vbw.customize ["modifyvm", :id, "--clipboard", "bidirectional"]
     vbw.customize ["modifyvm", :id, "--draganddrop", "bidirectional"]
+    vbw.customize ["modifyvm", :id, "--memory", 2048]
   end
 end
 
@@ -94,7 +95,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       extra_vbox_settings(node.vm)
       
       # Run configuration script for the VM
-      node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '.ps1'
+      #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '.ps1'
+      #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step1.ps1', reboot: true
+      #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step2.ps1'
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-test.ps1'
     end
   end
