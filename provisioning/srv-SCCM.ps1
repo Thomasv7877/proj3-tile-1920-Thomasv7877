@@ -1,44 +1,62 @@
 # variabels:
-$ADKSetupFile = # todo
-$PESetupFile = # todo
+$ADKSetupFile = "C:\Sources\ADK\adksetup.exe"
+$PESetupFile = "C:\Sources\ADK_PE\adkwinpesetup.exe"
+$nat_name = "NAT"
+$hostonly_name = "HOSTONLY"
+$ip_adr = "192.168.56.31"
+
+$PWordPlain = "vagrant"
+$Domain = "thovan.gent"
+$User = "thovan\vagrant"
 
 # functions:
-install_adk {
-    Start-Process -FilePath $ADKSetupFile -ArgumentList /Features OptionId.DeploymentTools  OptionId.UserStateMigrationTool /norestart /quiet /ceip off -NoNewWindow -Wait
+
+function config_basics{
+
+    Disable-NetAdapterBinding -Name "Ethernet" -ComponentID ms_tcpip6
+    Disable-NetAdapterBinding -Name "Ethernet 2" -ComponentID ms_tcpip6
+    Get-NetAdapter -Name "Ethernet" | Rename-NetAdapter -NewName $nat_name
+    Get-NetAdapter -Name "Ethernet 2" | Rename-NetAdapter -NewName $hostonly_name
+    Disable-NetAdapter $nat_name -Confirm:$false
+    New-NetRoute -InterfaceAlias $hostonly_name -DestinationPrefix "0.0.0.0/0" -NextHop $ip_adr
+
+}
+
+function join_domain {
+    $PWord = (ConvertTo-SecureString -String $PWordPlain -AsPlainText -Force)
+    $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
+    add-computer -domainname $Domain -Credential $Credential
+}
+
+function install_adk { # werkt niet..
+    Start-Process -FilePath $ADKSetupFile -ArgumentList /features OptionId.DeploymentTools OptionId.UserStateMigrationTool /norestart /quiet /ceip off -NoNewWindow -Wait
     Start-Process -FilePath $PESetupFile -ArgumentList /Features OptionId.WindowsPreinstallationEnvironment /norestart /quiet /ceip off -NoNewWindow -Wait
 }
 
-create_config_container {
+function install_adk2 { # werkt wel
+    Write-Output "Installing required items from ADK"
+    $Command = $ADKSetupFile
+    $Parameters = "/quiet", "/features OptionId.DeploymentTools OptionId.UserStateMigrationTool"
+    Start-Process -FilePath $Command -ArgumentList $Parameters -Wait
 
-    $DomainDN = (Get-ADDomain).DistinguishedName
-    $ThisSiteSystem = Get-ADComputer $env:ComputerName 
-    $SystemDN = "CN=System," + $DomainDN
-    $Container = New-ADObject -Type Container -name "System Management" -Path "$SystemDN" -Passthru
- 
-    $ACL = Get-ACL -Path AD:\$Container
-
-    $SID = [System.Security.Principal.SecurityIdentifier] $ThisSiteSystem.SID
-
-    $adRights = [System.DirectoryServices.ActiveDirectoryRights] "GenericAll"
-    $type = [System.Security.AccessControl.AccessControlType] "Allow"
-    $inheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance] "All"
-    $ACE = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
-                                     $SID,$adRights,$type,$inheritanceType
-
-    $ACL.AddAccessRule($ACE)
-
-    Set-ACL -AclObject $ACL -Path "AD:$Container"
+    Write-Output "Installing required items from ADK PE add-on"
+    $Command = $PESetupFile
+    $Parameters = "/quiet", "/Features OptionId.WindowsPreinstallationEnvironment"
+    Start-Process -FilePath $Command -ArgumentList $Parameters -Wait
 }
 
-extend_ad_schema { # todo: pad aanpassen
-    Start-Process -FilePath C:\Sources\SC2012_SP2_Configmgr_SCEP\SMSSETUP\BIN\X64\extadsch.exe -Wait
+
+function install_webserver { # todo
+    #add-windowsAdd-WindowsFeature Web-Mgmt-Tools, Web-Server
+    Install-WindowsFeature -ConfigurationFilePath "C:\vagrant\provisioning\webserver_prereq.xml"
 }
 
-install_webserver { # todo
-    Add-WindowsFeature Web-Mgmt-Tools, Web-Server
+function install_wsus {
+    # wsus folder -> C:\Sources\WSUS, conn string -> SRV-SCCM.thovan.gent
+    Install-WindowsFeature -ConfigurationFilePath "C:\vagrant\provisioning\wsus_prereq.xml"
 }
 
-install_sccm { # todo
+function install_sccm { # todo
     Start-Process setup.exe /script scriptpathandname -Wait
 }
 
