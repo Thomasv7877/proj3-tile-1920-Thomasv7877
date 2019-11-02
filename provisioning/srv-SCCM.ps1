@@ -4,6 +4,7 @@ $PESetupFile = "C:\Sources\ADK_PE\adkwinpesetup.exe"
 $nat_name = "NAT"
 $hostonly_name = "HOSTONLY"
 $ip_adr = "192.168.56.31"
+$dns_ip = "192.168.56.31"
 
 $PWordPlain = "vagrant"
 $Domain = "thovan.gent"
@@ -19,6 +20,7 @@ function config_basics{
     Get-NetAdapter -Name "Ethernet 2" | Rename-NetAdapter -NewName $hostonly_name
     Disable-NetAdapter $nat_name -Confirm:$false
     New-NetRoute -InterfaceAlias $hostonly_name -DestinationPrefix "0.0.0.0/0" -NextHop $ip_adr
+    Set-DnsClientServerAddress -InterfaceAlias $hostonly_name -ServerAddresses ($dns_ip)
 
 }
 
@@ -27,6 +29,8 @@ function join_domain {
     $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
     add-computer -domainname $Domain -Credential $Credential
 }
+
+# REBOOT
 
 function install_adk { # werkt niet..
     Start-Process -FilePath $ADKSetupFile -ArgumentList /features OptionId.DeploymentTools OptionId.UserStateMigrationTool /norestart /quiet /ceip off -NoNewWindow -Wait
@@ -46,14 +50,16 @@ function install_adk2 { # werkt wel
 }
 
 
-function install_webserver { # todo
+function install_webserver {
     #add-windowsAdd-WindowsFeature Web-Mgmt-Tools, Web-Server
     Install-WindowsFeature -ConfigurationFilePath "C:\vagrant\provisioning\webserver_prereq.xml"
 }
 
 function install_wsus {
-    # wsus folder -> C:\Sources\WSUS, conn string -> SRV-SCCM.thovan.gent
+    # wsus folder -> (C:\Sources\WSUS) C:\WSUS, conn string -> SRV-SCCM.thovan.gent
+    New-Item -Path C: -Name WSUS -ItemType Directory
     Install-WindowsFeature -ConfigurationFilePath "C:\vagrant\provisioning\wsus_prereq.xml"
+    Start-Process -FilePath "C:\Program Files\Update Services\Tools\WsusUtil.exe" -ArgumentList postinstall -wait
 }
 
 function install_sccm { # todo
