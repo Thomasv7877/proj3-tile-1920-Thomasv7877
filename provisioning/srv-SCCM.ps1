@@ -9,6 +9,7 @@ $dns_ip = "192.168.56.31"
 $PWordPlain = "vagrant"
 $Domain = "thovan.gent"
 $User = "thovan\vagrant"
+$sql_user = "THOVAN\vagrant"
 
 # functions:
 
@@ -58,8 +59,47 @@ function install_webserver {
 function install_wsus {
     # wsus folder -> (C:\Sources\WSUS) C:\WSUS, conn string -> SRV-SCCM.thovan.gent
     New-Item -Path C: -Name WSUS -ItemType Directory
-    Install-WindowsFeature -ConfigurationFilePath "C:\vagrant\provisioning\wsus_prereq.xml"
-    Start-Process -FilePath "C:\Program Files\Update Services\Tools\WsusUtil.exe" -ArgumentList postinstall -wait
+    #Install-WindowsFeature -ConfigurationFilePath "C:\vagrant\provisioning\wsus_prereq.xml"
+    Install-WindowsFeature -Name UpdateServices-Services,UpdateServices-DB -IncludeManagementTools
+    Start-Process -FilePath "C:\Program Files\Update Services\Tools\WsusUtil.exe" -ArgumentList "postinstall CONTENT_DIR=C:\WSUS SQL_INSTANCE_NAME=srv-SCCM.thovan.gent" -wait -NoNewWindow
+}
+
+function change_sql_logon {
+    [System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SqlWmiManagement") | out-null
+
+    $SMOWmiserver = New-Object ('Microsoft.SqlServer.Management.Smo.Wmi.ManagedComputer') "srv-SCCM" 
+    $ChangeService=$SMOWmiserver.Services | where {$_.name -eq "MSSQLSERVER"} 
+    $ChangeService.SetServiceAccount($sql_user, $PWordPlain)
+
+    Restart-Service -Force MSSQLSERVER
+}
+
+function extend_ad_schema { # alleen op srv-AD?
+    $PWordPlain = "vagrant"
+    $User = "thovan\Administrator"
+    $PWord = (ConvertTo-SecureString -String $PWordPlain -AsPlainText -Force)
+    $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
+
+    Start-Process -FilePath C:\Sources\SC_Configmgr_SCEP_1902\SMSSETUP\BIN\X64\extadsch.exe -Wait -Credential $credential
+}
+
+function create_sql_user {
+    # niet nodig:
+    #Install-Module -name sqlserver -Force
+
+$script_sp = @"
+    USE [master]
+    GO
+
+    CREATE LOGIN [$sql_user] FROM WINDOWS WITH DEFAULT_DATABASE=[master], DEFAULT_LANGUAGE=[us_english]
+    GO
+
+    ALTER SERVER ROLE [sysadmin] ADD MEMBER [$sql_user]
+    GO
+"@
+
+invoke-sqlcmd -query $script_sp
+
 }
 
 function install_sccm { # todo
