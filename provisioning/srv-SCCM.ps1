@@ -9,7 +9,8 @@ $dns_ip = "192.168.56.31"
 $PWordPlain = "vagrant"
 $Domain = "thovan.gent"
 $User = "thovan\vagrant"
-$sql_user = "THOVAN\vagrant"
+$sql_user = "thovan\vagrant"
+$sql_login = "thovan\administrator"
 
 # functions:
 
@@ -69,7 +70,7 @@ function change_sql_logon {
 
     $SMOWmiserver = New-Object ('Microsoft.SqlServer.Management.Smo.Wmi.ManagedComputer') "srv-SCCM" 
     $ChangeService=$SMOWmiserver.Services | where {$_.name -eq "MSSQLSERVER"} 
-    $ChangeService.SetServiceAccount($sql_user, $PWordPlain)
+    $ChangeService.SetServiceAccount($sql_login, $PWordPlain)
 
     Restart-Service -Force MSSQLSERVER
 }
@@ -102,8 +103,23 @@ invoke-sqlcmd -query $script_sp
 
 }
 
+function correct_sql_name {
+    $script_sp = @"
+    EXEC sp_dropserver 'WINGUSZ-U62L3FP';
+    GO
+    EXEC sp_addserver 'srv-SCCM', 'local';
+    GO
+"@
+invoke-sqlcmd -query $script_sp
+}
+
 function install_sccm { # todo
     Start-Process setup.exe /script scriptpathandname -Wait
+}
+
+function test {
+    echo "test functie oproep"
+    whoami
 }
 
 
