@@ -113,8 +113,8 @@ function correct_sql_name {
 invoke-sqlcmd -query $script_sp
 }
 
-function install_sccm { # todo
-    Start-Process setup.exe /script scriptpathandname -Wait
+function install_sccm { # testen
+    Start-Process "C:\Sources\SC_Configmgr_SCEP_1902\SMSSETUP\BIN\X64\setup.exe" /script "C:\vagrant\provisioning\setup.ini" -Wait
 }
 
 function test {
