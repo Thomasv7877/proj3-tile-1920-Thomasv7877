@@ -54,6 +54,7 @@ function config_nat{ # WERKT NIET !!!
 
     # legacy remote access menu enabelen
     #Set-Itemproperty -path 'HKLM:\SYSTEM\ControlSet001\Services\RemoteAccess\Parameters' -Name 'ModernStackEnabled' -value 0
+    # alt install: install-windowsfeature remoteaccess, directaccess-vpn, routing -includemanagementtools
 
     Install-WindowsFeature Routing -IncludeManagementTools
     Install-RemoteAccess -VpnType Vpn
