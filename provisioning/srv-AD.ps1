@@ -50,21 +50,24 @@ function dns_extra_zones{ # todo: de reverse zone?
     Add-DnsServerPrimaryZone -NetworkId "192.168.56.0/24" -ReplicationScope Forest
 }
     
-function config_nat{ # WERKT NIET !!!
+function config_nat{
 
     # legacy remote access menu enabelen
     #Set-Itemproperty -path 'HKLM:\SYSTEM\ControlSet001\Services\RemoteAccess\Parameters' -Name 'ModernStackEnabled' -value 0
-    # alt install: install-windowsfeature remoteaccess, directaccess-vpn, routing -includemanagementtools
 
-    Install-WindowsFeature Routing -IncludeManagementTools
+    # alt install: 
+    install-windowsfeature remoteaccess, directaccess-vpn, routing -includemanagementtools
+
+    #Install-WindowsFeature Routing -IncludeManagementTools
     Install-RemoteAccess -VpnType Vpn
      
     cmd.exe /c "netsh routing ip nat install"
+    cmd.exe /c "netsh routing ip nat add interface $nat_name full"
     
     # onderstaande is overbodig?
-    cmd.exe /c "netsh routing ip nat add interface $nat_name"
-    cmd.exe /c "netsh routing ip nat set interface $hostonly_name mode=full"
-    cmd.exe /c "netsh routing ip nat add interface $hostonly_name"
+    #cmd.exe /c "netsh routing ip nat add interface $nat_name"
+    #cmd.exe /c "netsh routing ip nat set interface $hostonly_name mode=full"
+    #cmd.exe /c "netsh routing ip nat add interface $hostonly_name"
     Set-Itemproperty -path 'HKLM:\SYSTEM\ControlSet001\Services\RemoteAccess\Parameters' -Name 'ModernStackEnabled' -value 0
 }
     
