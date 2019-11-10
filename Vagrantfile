@@ -70,10 +70,11 @@ def extra_vbox_settings(vm)
     vbw.customize ["modifyvm", :id, "--accelerate3d", "on"]
     vbw.customize ["modifyvm", :id, "--accelerate2dvideo", "on"]
     vbw.customize ["modifyvm", :id, "--graphicscontroller", "vboxsvga"]
-    vbw.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+    vbw.customize ["modifyvm", :id, "--paravirtprovider", "default"] # "hyperv" is buggy?
     vbw.customize ["modifyvm", :id, "--clipboard", "bidirectional"]
     vbw.customize ["modifyvm", :id, "--draganddrop", "bidirectional"]
-    vbw.customize ["modifyvm", :id, "--memory", 2048]
+    vbw.customize ["modifyvm", :id, "--memory", 4096]
+    vbw.customize ["modifyvm", :id, "--cpus", 2]
   end
 end
 
