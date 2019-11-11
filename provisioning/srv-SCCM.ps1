@@ -34,6 +34,10 @@ function join_domain {
 
 # REBOOT
 
+function remote_delegate_control { # todo
+
+}
+
 function install_adk { # werkt niet..
     Start-Process -FilePath $ADKSetupFile -ArgumentList /features OptionId.DeploymentTools OptionId.UserStateMigrationTool /norestart /quiet /ceip off -NoNewWindow -Wait
     Start-Process -FilePath $PESetupFile -ArgumentList /Features OptionId.WindowsPreinstallationEnvironment /norestart /quiet /ceip off -NoNewWindow -Wait
@@ -52,9 +56,10 @@ function install_adk2 { # werkt wel
 }
 
 
-function install_webserver {
+function install_webserver { # bits toevoegen aan eerste xml ipv twee..
     #add-windowsAdd-WindowsFeature Web-Mgmt-Tools, Web-Server
     Install-WindowsFeature -ConfigurationFilePath "C:\vagrant\provisioning\webserver_prereq.xml"
+    Install-WindowsFeature -ConfigurationFilePath "C:\vagrant\provisioning\webserver_prereq_bits.xml"
 }
 
 function install_wsus {
