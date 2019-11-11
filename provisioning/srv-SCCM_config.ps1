@@ -63,6 +63,6 @@ function prep_deployment {
     $passw = (ConvertTo-SecureString -String "vagrant" -AsPlainText -Force)
     $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId P0100003 -OperatingSystemImagePackageId P0100006 -OperatingSystemImageIndex 1 -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\vagrant" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client"
     # opm: -ApplicationName ("name1","name2") om de apps later toe te voegen
-    New-CMTaskSequenceDeployment -InputObject $taskseq -Collection $coll -Availability MediaAndPxe
+    New-CMTaskSequenceDeployment -InputObject $taskseq -Collection $coll -Availability MediaAndPxe -AllowFallback $true
 }
 
