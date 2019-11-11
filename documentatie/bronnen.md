@@ -22,3 +22,6 @@
 - [Hoe de reverse zone aanmaken in DNS via PS](https://adamtheautomator.com/powershell-dns/)  
 - [WSUS installeren en configureren via PS](https://devblogs.microsoft.com/scripting/installing-wsus-on-windows-server-2012/)  
 - [SQL Server log on account wijzigen via PS](https://devblogs.microsoft.com/scripting/use-powershell-to-change-sql-server-service-accounts/)  
+- [Uitleg netsh command](http://winintro.ru/netsh_technicalreference.en/html/6d34d1e7-7f9d-451c-9e04-09ef5b714d3f.htm)  
+- [Microsoft docs voor SCCM powershell cmdlet](https://docs.microsoft.com/en-us/powershell/sccm/overview?view=sccm-ps)  
+- [Powershell uitvoeren op domeincontroller vanop afstand](https://www.mowasay.com/2017/04/connecting-to-a-remote-domain-controller-using-powershell/)  
