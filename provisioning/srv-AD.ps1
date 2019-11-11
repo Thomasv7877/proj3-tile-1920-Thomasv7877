@@ -89,9 +89,11 @@ function create_config_container { # effect??
 
     $DomainDN = (Get-ADDomain).DistinguishedName
     $ThisSiteSystem = Get-ADComputer $env:ComputerName 
+    #$ThisSiteSystem = Get-ADComputer "srv-SCCM"
     $SystemDN = "CN=System," + $DomainDN
     $Container = New-ADObject -Type Container -name "System Management" -Path "$SystemDN" -Passthru
- 
+    #$Container = Get-ADObject -Filter 'name -eq "System Management"'
+
     $ACL = Get-ACL -Path AD:\$Container
 
     $SID = [System.Security.Principal.SecurityIdentifier] $ThisSiteSystem.SID
