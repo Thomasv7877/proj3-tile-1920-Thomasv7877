@@ -1,6 +1,6 @@
 # variabels:
-$ADKSetupFile = "C:\Sources\ADK\adksetup.exe"
-$PESetupFile = "C:\Sources\ADK_PE\adkwinpesetup.exe"
+$ADKSetupFile = "C:\Sources\ADK_NEW\adksetup.exe"
+$PESetupFile = "C:\Sources\ADK_PE_NEW\adkwinpesetup.exe"
 $nat_name = "NAT"
 $hostonly_name = "HOSTONLY"
 $ip_adr = "192.168.56.31"
@@ -34,7 +34,33 @@ function join_domain {
 
 # REBOOT
 
-function remote_delegate_control { # todo
+function remote_delegate_control { # test
+    Set-ExecutionPolicy Unrestricted -force
+
+    $User = "thovan\vagrant"
+    $PWordPlain = "vagrant"
+    $PWord = (ConvertTo-SecureString -String $PWordPlain -AsPlainText -Force)
+    $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
+    $session = New-PSSession -ComputerName "srv-AD" -Credential $Credential
+
+    Invoke-Command $session -Scriptblock { 
+        $ThisSiteSystem = Get-ADComputer "srv-SCCM"
+        $Container = Get-ADObject -Filter 'name -eq "System Management"'
+    
+        $ACL = Get-ACL -Path AD:\$Container
+    
+        $SID = [System.Security.Principal.SecurityIdentifier] $ThisSiteSystem.SID
+    
+        $adRights = [System.DirectoryServices.ActiveDirectoryRights] "GenericAll"
+        $type = [System.Security.AccessControl.AccessControlType] "Allow"
+        $inheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance] "All"
+        $ACE = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
+                                         $SID,$adRights,$type,$inheritanceType
+    
+        $ACL.AddAccessRule($ACE)
+    
+        Set-ACL -AclObject $ACL -Path "AD:$Container"
+    }
 
 }
 
