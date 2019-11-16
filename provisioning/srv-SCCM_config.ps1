@@ -4,9 +4,9 @@
 # functions:
 
 function prepare_SCCM_cmdlet {
-    cd 'C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin'
+    Set-Location 'C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin'
     Import-Module .\ConfigurationManager.psd1
-    cd P01:
+    Set-Location P01:
 }
 
 function forestDiscovery { # ook manueel laten discoveren?
@@ -61,7 +61,7 @@ function prep_deployment {
     # geen '_' in computername! bovenstaande commando deployed niet (direct) naar gekozen collection?
 
     $passw = (ConvertTo-SecureString -String "vagrant" -AsPlainText -Force)
-    $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId P0100003 -OperatingSystemImagePackageId P0100006 -OperatingSystemImageIndex 1 -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\vagrant" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client"
+    $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId P0100003 -OperatingSystemImagePackageId P0100006 -OperatingSystemImageIndex 1 -LocalAdminPassword $passw -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\vagrant" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client" -ConfigureBitLocker $false
     # opm: -ApplicationName ("name1","name2") om de apps later toe te voegen
     New-CMTaskSequenceDeployment -InputObject $taskseq -Collection $coll -Availability MediaAndPxe -AllowFallback $true
 }
