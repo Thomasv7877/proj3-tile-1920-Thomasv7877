@@ -82,7 +82,10 @@ function config_dhcp{
     Add-DhcpServerInDC -DnsName "$hostname.$dom_name" -IPAddress $hostonly_ip -CimSession $cs
     Get-DhcpServerInDC # authorizatie checken
     Add-DhcpServerv4Scope -name $scope_name -StartRange $start -EndRange $end -SubnetMask $mask -State Active
-    # Add-DhcpServerv4ExclusionRange -ScopeID 10.0.0.0 -StartRange 10.0.0.1 -EndRange 10.0.0.15
+    Set-DhcpServerv4OptionValue -ComputerName "srv-AD.thovan.gent" -DnsServer 192.168.56.31 -DnsDomain "thovan.gent" -Router 192.168.56.31
+
+    # Overbodig:
+    #Add-DhcpServerv4ExclusionRange -ScopeID 10.0.0.0 -StartRange 10.0.0.1 -EndRange 10.0.0.15
 }
 
 function create_config_container { # effect??
