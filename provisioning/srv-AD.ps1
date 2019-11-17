@@ -88,28 +88,12 @@ function config_dhcp{
     #Add-DhcpServerv4ExclusionRange -ScopeID 10.0.0.0 -StartRange 10.0.0.1 -EndRange 10.0.0.15
 }
 
-function create_config_container { # effect??
+function create_config_container {
 
     $DomainDN = (Get-ADDomain).DistinguishedName
-    $ThisSiteSystem = Get-ADComputer $env:ComputerName 
-    #$ThisSiteSystem = Get-ADComputer "srv-SCCM"
     $SystemDN = "CN=System," + $DomainDN
-    $Container = New-ADObject -Type Container -name "System Management" -Path "$SystemDN" -Passthru
-    #$Container = Get-ADObject -Filter 'name -eq "System Management"'
+    New-ADObject -Type Container -name "System Management" -Path "$SystemDN" -Passthru
 
-    $ACL = Get-ACL -Path AD:\$Container
-
-    $SID = [System.Security.Principal.SecurityIdentifier] $ThisSiteSystem.SID
-
-    $adRights = [System.DirectoryServices.ActiveDirectoryRights] "GenericAll"
-    $type = [System.Security.AccessControl.AccessControlType] "Allow"
-    $inheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance] "All"
-    $ACE = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
-                                     $SID,$adRights,$type,$inheritanceType
-
-    $ACL.AddAccessRule($ACE)
-
-    Set-ACL -AclObject $ACL -Path "AD:$Container"
 }
 
 function extend_ad_schema {
@@ -129,6 +113,13 @@ function config_firewall {
     import-GPO -Domain $dom_name -BackupId 6EFCAB8F-75E9-48A6-8EE5-FFF481566812 -Path C:\vagrant\provisioning -TargetName $gpo1
     new-gpo -name $gpo2
     import-GPO -Domain $dom_name -BackupId 0BA78A36-741F-4573-AAE4-1B2930AA3292 -Path C:\vagrant\provisioning -TargetName $gpo2
+}
+
+function match_vagrant_to_administrator {
+    $groups = ("schema admins","domain admins","enterprise admins","group policy creator owners")
+    foreach($group in $groups){
+        Add-ADGroupMember -Identity $group -Members "vagrant"
+    }
 }
 
 # operations:
