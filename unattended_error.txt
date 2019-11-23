@@ -1,0 +1,27 @@
+5:11 PM : This application requires version 10.0.18362.1 of the Windows ADK.
+Install this version to correct the problem
+5:14 PM : 
+5:14 PM : Windows SIM was unable to generate a catalog. For troubleshooting assistance, see the topic: 'Windows System Image Manager Technical Reference' in the Windows ADK User's Guide.
+5:14 PM : 
+5:14 PM : System.BadImageFormatException: Could not load file or assembly 'Microsoft.ComponentStudio.ComponentPlatformImplementation, Version=10.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35' or one of its dependencies. An attempt was made to load a program with an incorrect format.
+File name: 'Microsoft.ComponentStudio.ComponentPlatformImplementation, Version=10.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'
+
+Server stack trace: 
+   at Microsoft.ComponentStudio.ComponentPlatformInterface.Cpi.CreateOfflineImageInstance(OfflineImageInfo imageInfo)
+   at Microsoft.ComponentStudio.ComponentPlatformInterface.OfflineImageCatalog.Serialize(OfflineImageInfo imageInfo)
+   at Microsoft.ComponentStudio.ComponentPlatformInterface.OfflineImageInfo.CreateCatalog()
+   at Microsoft.ComponentStudio.ComponentPlatformInterface.CatalogCreatorImpl.CreateCatalog(OfflineImageInfo offlineImageInfo)
+   at System.Runtime.Remoting.Messaging.StackBuilderSink._PrivateProcessMessage(IntPtr md, Object[] args, Object server, Object[]& outArgs)
+   at System.Runtime.Remoting.Messaging.StackBuilderSink.SyncProcessMessage(IMessage msg)
+
+Exception rethrown at [0]: 
+   at System.Runtime.Remoting.Proxies.RealProxy.HandleReturnMessage(IMessage reqMsg, IMessage retMsg)
+   at System.Runtime.Remoting.Proxies.RealProxy.PrivateInvoke(MessageData& msgData, Int32 type)
+   at Microsoft.ComponentStudio.ComponentPlatformInterface.ICatalogCreator.CreateCatalog(OfflineImageInfo offlineImageInfo)
+   at Microsoft.ComponentStudio.CatalogGenerator.CreateCat(ProgressDialog pd, Object o)
+
+WRN: Assembly binding logging is turned OFF.
+To enable assembly bind failure logging, set the registry value [HKLM\Software\Microsoft\Fusion!EnableLog] (DWORD) to 1.
+Note: There is some performance penalty associated with assembly bind failure logging.
+To turn this feature off, remove the registry value [HKLM\Software\Microsoft\Fusion!EnableLog].
+
