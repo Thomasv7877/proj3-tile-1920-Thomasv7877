@@ -70,20 +70,20 @@ function prep_deployment {
     $StepVar4 = New-CMTSStepConditionVariable -OperatorType NotEquals -ConditionVariableName _SMSTSBootUEFI -ConditionVariableValue true
 
     $BIOSPartitionScheme = @(
-        $(New-CMTaskSequencePartitionSetting -PartitionPrimary -Name 'System Reserved' -Size 750 -SizeUnit MB -EnableDriveLetterAssignment $false -IsBootPartition $true),
-        $(New-CMTaskSequencePartitionSetting -PartitionPrimary -Name 'Windows' -Size 99 -SizeUnit Percent),
-        $(New-CMTaskSequencePartitionSetting -PartitionRecovery -Name 'Recovery' -Size 100 -SizeUnit Percent)
+        #$(New-CMTaskSequencePartitionSetting -PartitionPrimary -Name 'System Reserved' -Size 750 -SizeUnit MB -EnableDriveLetterAssignment $false -IsBootPartition $true),
+        $(New-CMTaskSequencePartitionSetting -PartitionPrimary -Name 'Windows' -Size 100 -SizeUnit Percent)
+        #$(New-CMTaskSequencePartitionSetting -PartitionRecovery -Name 'Recovery' -Size 100 -SizeUnit Percent)
     ) 
     $TSStepBIOSPartition = New-CMTaskSequenceStepPartitionDisk -Name 'Partition Disk 0 - BIOS' -DiskType Mbr -DiskNumber 0 -PartitionSetting $BIOSPartitionScheme -Condition ($StepVar1,$StepVar2,$StepVar3,$StepVar4)
         
     $UEFIPartitionScheme = @(
         $(New-CMTaskSequencePartitionSetting -PartitionEfi -Size 1 -SizeUnit GB),
         $(New-CMTaskSequencePartitionSetting -PartitionMsr -Size 128 -SizeUnit MB),
-        $(New-CMTaskSequencePartitionSetting -PartitionPrimary -Name 'Windows' -Size 99 -SizeUnit Percent),
-        $(New-CMTaskSequencePartitionSetting -PartitionRecovery -Name 'Recovery' -Size 100 -SizeUnit Percent)
+        $(New-CMTaskSequencePartitionSetting -PartitionPrimary -Name 'Windows' -Size 100 -SizeUnit Percent)
+        #$(New-CMTaskSequencePartitionSetting -PartitionRecovery -Name 'Recovery' -Size 100 -SizeUnit Percent)
     )     
     $TSStepUEFIPartition = New-CMTaskSequenceStepPartitionDisk -Name 'Partition Disk 0 - UEFI' -DiskType Gpt -DiskNumber 0 -PartitionSetting $UEFIPartitionScheme -IsBootDisk $true -Condition ($StepVar1,$StepVar2,$StepVar3,$StepVar4)
-    Set-CMTaskSequenceGroup -InputObject $taskseq -StepName "Install Operating System" -AddStep ($TSStepBIOSPartition,$TSStepUEFIPartition) -InsertStepStartIndex 1
+    Set-CMTaskSequenceGroup -InputObject $taskseq -StepName "Install Operating System" -AddStep ($TSStepUEFIPartition, $TSStepBIOSPartition) -InsertStepStartIndex 1
          
     New-CMTaskSequenceDeployment -InputObject $taskseq -Collection $coll -Availability MediaAndPxe -AllowFallback $true
 }
@@ -106,4 +106,12 @@ function create_network_access_account {
     $prop.Values = $NAA
     $component.PropLists = $props
     $component.Put() | Out-Null
+}
+
+function create_applications {
+    # Adobe Reader DC:
+    $adreader = new-cmapplication -name "Adobe Acrobat Reader DC" -publisher "Adobe" -softwareversion "2018.011.20036"
+    $adreader_detection = New-CMDetectionClauseWindowsInstaller -ProductCode "{AC76BA86-7AD7-1033-7B44-AC0F074E4100}" -Existence add-CMscriptDeploymentType -InputObject $adreader -DeploymentTypeName "Adobe Acrobat Reader DC deployment" -ContentLocation "\\srv-SCCM\Sources\applicaties\adobe reader dc\2018.011.20036\" -InstallCommand "setup.exe" -UninstallCommand "msiexec /x {AC76BA86-7AD7-1033-7B44-AC0F074E4100} /q" -AddDetectionClause $adreader_detection
+    Start-CMContentDistribution -InputObject $adreader -DistributionPointName "srv-SCCM.thovan.gent"
+    # 7-zip:
 }
