@@ -55,13 +55,31 @@ function import_os {
     Start-CMContentDistribution -OperatingSystemImageName "Windows 10" -DistributionPointName "srv-SCCM.thovan.gent"
 }
 
+function create_applications {
+    # Adobe Reader DC:
+    $adreader = new-cmapplication -name "Adobe Acrobat Reader DC" -publisher "Adobe" -softwareversion "2018.011.20036"
+    $adreader_detection = New-CMDetectionClauseWindowsInstaller -ProductCode "{AC76BA86-7AD7-1033-7B44-AC0F074E4100}" -Existence
+    add-CMscriptDeploymentType -InputObject $adreader -DeploymentTypeName "Adobe Acrobat Reader DC deployment" -ContentLocation "\\srv-SCCM\Sources\applicaties\adobe reader dc\2018.011.20036\" -InstallCommand "setup.exe" -UninstallCommand "msiexec /x {AC76BA86-7AD7-1033-7B44-AC0F074E4100} /q" -AddDetectionClause $adreader_detection -LogonRequirementType WhetherOrNotUserLoggedOn -InstallationBehaviorType InstallForSystem
+    Start-CMContentDistribution -InputObject $adreader -DistributionPointName "srv-SCCM.thovan.gent"
+    # 7-zip:
+    $7zip = New-CMApplication -Name "7-Zip" -SoftwareVersion "17.00"
+    $7zip_detection = New-CMDetectionClauseWindowsInstaller -ProductCode "{23170F69-40C1-2702-1700-000001000000}" -Existence
+    Add-CMscriptDeploymentType -InputObject $7zip -DeploymentTypeName "7-Zip deployment" -ContentLocation "\\srv-sccm\Sources\applicaties\7-zip\" -InstallCommand 'msiexec /i "7z1700-x64.msi" /q' -UninstallCommand "msiexec /x {23170F69-40C1-2702-1700-000001000000} /q" -AddDetectionClause $7zip_detection -LogonRequirementType WhetherOrNotUserLoggedOn -InstallationBehaviorType InstallForSystem
+    Start-CMContentDistribution -InputObject $7zip -DistributionPointName "srv-SCCM.thovan.gent"
+    # Notepad++:
+    $notepadplus = New-CMApplication -Name "Notepad++" -SoftwareVersion "7.4.2"
+    $notepadplus_detection = New-CMDetectionClauseFile -Path "C:\Program Files (x86)\Notepad++\" -FileName "notepad++.exe" -PropertyType Version -ExpressionOperator GreaterEquals -Value -ExpectedValue "7.4.2"
+    Add-CMScriptDeploymentType -InputObject $notepadplus -DeploymentTypeName "Notepad++ deployment" -ContentLocation "\\srv-sccm\Sources\applicaties\notepad ++\7.4.2\" -InstallCommand '"npp.7.4.2.Installer.exe" /S' -AddDetectionClause $notepadplus_detection -LogonRequirementType WhetherOrNotUserLoggedOn -InstallationBehaviorType InstallForSystem
+    Start-CMContentDistribution -InputObject $notepadplus -DistributionPointName "srv-SCCM.thovan.gent"
+}
+
 function prep_deployment {
     $coll = New-CMDeviceCollection -Name "Windows 10" -LimitingCollectionName "All Systems"
     Import-CMComputerInformation -CollectionName "Windows 10" -ComputerName "Client1" -MacAddress "08:00:27:8F:43:60" 
     # geen '_' in computername! bovenstaande commando deployed niet (direct) naar gekozen collection?
 
     $passw = (ConvertTo-SecureString -String "vagrant" -AsPlainText -Force)
-    $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId P0100003 -OperatingSystemImagePackageId P0100006 -OperatingSystemImageIndex 1 -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\vagrant" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client" -ConfigureBitLocker $false
+    $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId P0100003 -OperatingSystemImagePackageId P0100006 -OperatingSystemImageIndex 1 -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\vagrant" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client" -ConfigureBitLocker $false -ApplicationName ("Adobe Acrobat Reader DC","7-Zip","Notepad++") -IgnoreInvalidApplication $true
     # opm: -ApplicationName ("name1","name2") om de apps later toe te voegen -LocalAdminPassword $passw -PartitionAndFormatTarget $true
 
     $StepVar1 = New-CMTSStepConditionVariable -OperatorType NotExists -ConditionVariableName _SMSTSClientCache
@@ -108,10 +126,3 @@ function create_network_access_account {
     $component.Put() | Out-Null
 }
 
-function create_applications {
-    # Adobe Reader DC:
-    $adreader = new-cmapplication -name "Adobe Acrobat Reader DC" -publisher "Adobe" -softwareversion "2018.011.20036"
-    $adreader_detection = New-CMDetectionClauseWindowsInstaller -ProductCode "{AC76BA86-7AD7-1033-7B44-AC0F074E4100}" -Existence add-CMscriptDeploymentType -InputObject $adreader -DeploymentTypeName "Adobe Acrobat Reader DC deployment" -ContentLocation "\\srv-SCCM\Sources\applicaties\adobe reader dc\2018.011.20036\" -InstallCommand "setup.exe" -UninstallCommand "msiexec /x {AC76BA86-7AD7-1033-7B44-AC0F074E4100} /q" -AddDetectionClause $adreader_detection
-    Start-CMContentDistribution -InputObject $adreader -DistributionPointName "srv-SCCM.thovan.gent"
-    # 7-zip:
-}
