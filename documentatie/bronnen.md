@@ -31,3 +31,6 @@
 - [Network accesss account aanmaken met powershell](http://www.oscc.be/sccm/configmgr/powershell/naa/Set-NAA-using-Powershell-in-CB/)  
 - [Variabelen gebruik in task sequences](https://www.scconfigmgr.com/2018/01/10/customize-task-sequences-in-configmgr-current-branch-using-powershell/)  
 - [Officiele docs voor New-CMTasksequence](https://docs.microsoft.com/en-us/powershell/module/configurationmanager/new-cmtasksequence?view=sccm-ps)  
+- [Uitleg over probleem met Windows 10 partitionering](https://www.windows-noob.com/forums/topic/16554-windows-10-disk-partition-discrepencies/)  
+- [Blogpost met uitgebreide utileg over bovenstaand probleem](https://miketerrill.net/2017/07/12/configuration-manager-osd-recovery-partitions-and-mbr2gpt/)  
+- [De reden waarom een applicatie niet op te nemen is in een Task Sequence, welke instelling gewijzigt moet worden](https://www.windows-noob.com/forums/topic/8426-application-not-available-to-select-from-list-in-install-application-task-sequence-step/)  
