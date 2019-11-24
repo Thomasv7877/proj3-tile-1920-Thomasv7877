@@ -39,41 +39,12 @@ function config_adds {
     -SysvolPath "C:\Windows\SYSVOL" `
     -Force:$true
 }
-    
-function dns_put_ip{
-    Set-DnsClientServerAddress -InterfaceAlias $hostonly_name -ServerAddresses ($hostonly_ip)
-}
-    
-function dns_extra_zones{
-    
-}
-    
-function config_nat{
 
-    Install-WindowsFeature Routing -IncludeManagementTools
-    Install-RemoteAccess -VpnType Vpn
-     
-    cmd.exe /c "netsh routing ip nat install"
-    cmd.exe /c "netsh routing ip nat add interface $nat_name"
-    cmd.exe /c "netsh routing ip nat set interface $hostonly_name mode=full"
-    cmd.exe /c "netsh routing ip nat add interface $hostonly_name"
-
-}
-    
-function config_dhcp{
-
-    $User = "localhost\Administrator"
-    $PWord = (ConvertTo-SecureString -String "vagrant" -AsPlainText -Force)
-    $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
-    $cs = New-CimSession -Credential $credential -ComputerName localhost
-
-    Install-WindowsFeature DHCP -IncludeManagementTools
-    Add-DhcpServerInDC -DnsName "$hostname.$dom_name" -IPAddress $hostonly_ip -CimSession $cs
-    Get-DhcpServerInDC # authorizatie checken
-    Add-DhcpServerv4Scope -name $scope_name -StartRange $start -EndRange $end -SubnetMask $mask -State Active
-    # Add-DhcpServerv4ExclusionRange -ScopeID 10.0.0.0 -StartRange 10.0.0.1 -EndRange 10.0.0.15
-}
-
-# execution:
+# uitvoering
 config_basics
 config_adds
+
+# extra:
+#Start-Sleep 120
+
+# REBOOT

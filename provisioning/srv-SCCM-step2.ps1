@@ -13,27 +13,6 @@ $sql_user = "thovan\vagrant"
 $sql_login = "thovan\administrator"
 
 # functions:
-
-function config_basics{
-
-    Disable-NetAdapterBinding -Name "Ethernet" -ComponentID ms_tcpip6
-    Disable-NetAdapterBinding -Name "Ethernet 2" -ComponentID ms_tcpip6
-    Get-NetAdapter -Name "Ethernet" | Rename-NetAdapter -NewName $nat_name
-    Get-NetAdapter -Name "Ethernet 2" | Rename-NetAdapter -NewName $hostonly_name
-    #Disable-NetAdapter $nat_name -Confirm:$false
-    New-NetRoute -InterfaceAlias $hostonly_name -DestinationPrefix "0.0.0.0/0" -NextHop $ip_adr
-    Set-DnsClientServerAddress -InterfaceAlias $hostonly_name -ServerAddresses ($dns_ip)
-
-}
-
-function join_domain {
-    $PWord = (ConvertTo-SecureString -String $PWordPlain -AsPlainText -Force)
-    $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
-    add-computer -domainname $Domain -Credential $Credential
-}
-
-# REBOOT
-
 function remote_delegate_control { # test
     Set-ExecutionPolicy Unrestricted -force
 
@@ -149,11 +128,20 @@ function install_sccm { # testen
     Start-Process "C:\Sources\SC_Configmgr_SCEP_1902\SMSSETUP\BIN\X64\setup.exe" -argumentlist  "/script 'C:\vagrant\provisioning\setup.ini'" -Wait
 }
 
+# REBOOT
+
 function test {
     echo "test functie oproep"
     whoami
 }
 
-
-
 # execution:
+# remote_delegate_control
+# install_adk2
+# install_webserver
+# install_wsus
+# change_sql_logon
+# extend_ad_schema
+# create_sql_user
+# correct_sql_name
+# install_sccm

@@ -82,6 +82,12 @@ end
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.ssh.insert_key = false
+  config.winrm.timeout = 200
+  config.winrm.retry_limit = 15
+  config.winrm.retry.delay = 20
+  config.winrm.ssl_peer_verification = false
+  config.winrm.transport = :plaintext
+  config.winrm.basic_auth_only = true
   hosts.each do |host|
     config.vm.define host['name'] do |node|
       node.vm.box = host['box'] ||= DEFAULT_BASE_BOX
@@ -98,7 +104,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       # Run configuration script for the VM
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '.ps1'
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step1.ps1', reboot: true
+      node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step1.ps1'
+      node.vm.provision :reload
+      node.vm.provision 'shell', inline: "write-host 'post reboot operaties'"
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step2.ps1'
+      #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-test.ps1'
+      #node.vm.provision :reload
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-test.ps1'
     end
   end

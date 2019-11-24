@@ -1,8 +1,7 @@
 # Variables:
-
+# todo
 
 # functions:
-
 function prepare_SCCM_cmdlet {
     Set-Location 'C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin'
     Import-Module .\ConfigurationManager.psd1
@@ -48,6 +47,26 @@ function client_install_settings {
     # ook account toevoegen/specifieeren? -> -AddAccount/chosenaccount "thovan\administrator"
 }
 
+function create_network_access_account {
+    $NAA = "thovan\vagrant"
+    #$pwd = (ConvertTo-SecureString -String "V@grant" -AsPlainText -Force)
+    #New-CMAccount -Name $NAA -Password $pwd -Sitecode "P01"
+    $SiteCode = Get-PSDrive -PSProvider CMSITE
+
+    $component = gwmi -class SMS_SCI_ClientComp -Namespace "root\sms\site_$($SiteCode.Name)"  | Where-Object {$_.ItemName -eq "Software Distribution"}
+    $props = $component.PropLists
+    $prop = $props | where {$_.PropertyListName -eq "Network Access User Names"}
+
+	# Create a new instance of the Embedded Propertylist
+    $new = [WmiClass] "root\sms\site_$($SiteCode.name):SMS_EmbeddedPropertyList"
+    $embeddedproperylist = $new.CreateInstance()
+
+    $embeddedproperylist.PropertyListName = "Network Access User Names"
+    $prop.Values = $NAA
+    $component.PropLists = $props
+    $component.Put() | Out-Null
+}
+
 function import_os {
     $Share =[wmiClass]"Win32_share"
     $Share.create("C:\Sources","Sources",0)
@@ -79,7 +98,7 @@ function prep_deployment {
     # geen '_' in computername! bovenstaande commando deployed niet (direct) naar gekozen collection?
 
     $passw = (ConvertTo-SecureString -String "vagrant" -AsPlainText -Force)
-    $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId P0100003 -OperatingSystemImagePackageId P0100006 -OperatingSystemImageIndex 1 -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\vagrant" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client" -ConfigureBitLocker $false -ApplicationName ("Adobe Acrobat Reader DC","7-Zip","Notepad++") -IgnoreInvalidApplication $true
+    $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId P0100005 -OperatingSystemImagePackageId P0100006 -OperatingSystemImageIndex 1 -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\vagrant" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client" -ConfigureBitLocker $false -ApplicationName ("Adobe Acrobat Reader DC","7-Zip","Notepad++") -IgnoreInvalidApplication $true
     # opm: -ApplicationName ("name1","name2") om de apps later toe te voegen -LocalAdminPassword $passw -PartitionAndFormatTarget $true
 
     $StepVar1 = New-CMTSStepConditionVariable -OperatorType NotExists -ConditionVariableName _SMSTSClientCache
@@ -106,23 +125,17 @@ function prep_deployment {
     New-CMTaskSequenceDeployment -InputObject $taskseq -Collection $coll -Availability MediaAndPxe -AllowFallback $true
 }
 
-function create_network_access_account {
-    $NAA = "thovan\vagrant"
-    #$pwd = (ConvertTo-SecureString -String "V@grant" -AsPlainText -Force)
-    #New-CMAccount -Name $NAA -Password $pwd -Sitecode "P01"
-    $SiteCode = Get-PSDrive -PSProvider CMSITE
-
-    $component = gwmi -class SMS_SCI_ClientComp -Namespace "root\sms\site_$($SiteCode.Name)"  | Where-Object {$_.ItemName -eq "Software Distribution"}
-    $props = $component.PropLists
-    $prop = $props | where {$_.PropertyListName -eq "Network Access User Names"}
-
-	# Create a new instance of the Embedded Propertylist
-    $new = [WmiClass] "root\sms\site_$($SiteCode.name):SMS_EmbeddedPropertyList"
-    $embeddedproperylist = $new.CreateInstance()
-
-    $embeddedproperylist.PropertyListName = "Network Access User Names"
-    $prop.Values = $NAA
-    $component.PropLists = $props
-    $component.Put() | Out-Null
+# Execution:
+function uitvoer {
+prepare_SCCM_cmdlet
+forestDiscovery
+boundaries
+site_roles
+dist_point_pxe_settings
+boot_images_settings
+client_install_settings
+create_network_access_account
+import_os
+create_applications
+prep_deployment
 }
-
