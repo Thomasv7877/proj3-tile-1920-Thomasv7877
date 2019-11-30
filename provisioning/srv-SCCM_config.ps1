@@ -5,6 +5,8 @@
 function prepare_SCCM_cmdlet {
     Set-Location 'C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin'
     Import-Module .\ConfigurationManager.psd1
+    # indien setup.ini install PSDrive manueel aanmaken:
+    new-psdrive -Name "P01" -PSProvider "AdminUI.PS.Provider\CMSite" -Root "srv-SCCM.thovan.gent" -Description "P01 Primary Site"
     Set-Location P01:
 }
 
@@ -68,10 +70,11 @@ function create_network_access_account {
 }
 
 function import_os {
-    $Share =[wmiClass]"Win32_share"
-    $Share.create("C:\Sources","Sources",0)
+    # share wordt nu aangemaakt net voor sccm setup
+    #$Share =[wmiClass]"Win32_share"
+    #$Share.create("C:\Sources","Sources",0)
     New-CMOperatingSystemImage -Name "Windows 10 1904" -Path "\\srv-SCCM\Sources\captured\win10_1904.wim"
-    Start-CMContentDistribution -OperatingSystemImageName "Windows 10" -DistributionPointName "srv-SCCM.thovan.gent"
+    Start-CMContentDistribution -OperatingSystemImageName "Windows 10 1904" -DistributionPointName "srv-SCCM.thovan.gent"
 }
 
 function create_applications {
@@ -97,8 +100,11 @@ function prep_deployment {
     Import-CMComputerInformation -CollectionName "Windows 10" -ComputerName "Client1" -MacAddress "08:00:27:8F:43:60" 
     # geen '_' in computername! bovenstaande commando deployed niet (direct) naar gekozen collection?
 
+    $bootimg_id = (Get-CMBootImage -Name "Boot image (x64)").packageid
+    $osimg_id = (Get-CMOperatingSystemImage -Name "Windows 10 1904").packageid
+
     $passw = (ConvertTo-SecureString -String "vagrant" -AsPlainText -Force)
-    $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId P0100005 -OperatingSystemImagePackageId P0100006 -OperatingSystemImageIndex 1 -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\vagrant" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client" -ConfigureBitLocker $false -ApplicationName ("Adobe Acrobat Reader DC","7-Zip","Notepad++") -IgnoreInvalidApplication $true
+    $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId $bootimg_id -OperatingSystemImagePackageId $osimg_id -OperatingSystemImageIndex 1 -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\vagrant" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client" -ConfigureBitLocker $false -ApplicationName ("Adobe Acrobat Reader DC","7-Zip","Notepad++") -IgnoreInvalidApplication $true
     # opm: -ApplicationName ("name1","name2") om de apps later toe te voegen -LocalAdminPassword $passw -PartitionAndFormatTarget $true
 
     $StepVar1 = New-CMTSStepConditionVariable -OperatorType NotExists -ConditionVariableName _SMSTSClientCache

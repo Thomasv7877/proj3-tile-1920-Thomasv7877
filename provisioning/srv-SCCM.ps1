@@ -146,7 +146,10 @@ invoke-sqlcmd -query $script_sp
 }
 
 function install_sccm { # testen
-    Start-Process "C:\Sources\SC_Configmgr_SCEP_1902\SMSSETUP\BIN\X64\setup.exe" -argumentlist  "/script 'C:\vagrant\provisioning\setup.ini'" -Wait
+    $Share =[wmiClass]"Win32_share"
+    $Share.create("C:\Sources","Sources",0)
+
+    Start-Process "C:\Sources\SC_Configmgr_SCEP_1902\SMSSETUP\BIN\X64\setup.exe" -argumentlist  "/script \\srv-SCCM\Sources\setup.ini" -Wait
 }
 
 function test {
