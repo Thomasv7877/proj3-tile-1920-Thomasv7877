@@ -65,8 +65,8 @@ function remote_delegate_control { # test
 }
 
 function install_adk { # werkt niet..
-    Start-Process -FilePath $ADKSetupFile -ArgumentList /features OptionId.DeploymentTools OptionId.UserStateMigrationTool /norestart /quiet /ceip off -NoNewWindow -Wait
-    Start-Process -FilePath $PESetupFile -ArgumentList /Features OptionId.WindowsPreinstallationEnvironment /norestart /quiet /ceip off -NoNewWindow -Wait
+    Start-Process -FilePath $ADKSetupFile -ArgumentList "/features OptionId.DeploymentTools OptionId.UserStateMigrationTool /norestart /quiet /ceip off" -NoNewWindow -Wait
+    Start-Process -FilePath $PESetupFile -ArgumentList "/Features OptionId.WindowsPreinstallationEnvironment /norestart /quiet /ceip off" -NoNewWindow -Wait
 }
 
 function install_adk2 { # werkt wel

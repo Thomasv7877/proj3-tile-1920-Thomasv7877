@@ -55,9 +55,9 @@ function create_network_access_account {
     #New-CMAccount -Name $NAA -Password $pwd -Sitecode "P01"
     $SiteCode = Get-PSDrive -PSProvider CMSITE
 
-    $component = gwmi -class SMS_SCI_ClientComp -Namespace "root\sms\site_$($SiteCode.Name)"  | Where-Object {$_.ItemName -eq "Software Distribution"}
+    $component = Get-WmiObject -class SMS_SCI_ClientComp -Namespace "root\sms\site_$($SiteCode.Name)"  | Where-Object {$_.ItemName -eq "Software Distribution"}
     $props = $component.PropLists
-    $prop = $props | where {$_.PropertyListName -eq "Network Access User Names"}
+    $prop = $props | Where-Object {$_.PropertyListName -eq "Network Access User Names"}
 
 	# Create a new instance of the Embedded Propertylist
     $new = [WmiClass] "root\sms\site_$($SiteCode.name):SMS_EmbeddedPropertyList"
