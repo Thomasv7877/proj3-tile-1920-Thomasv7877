@@ -40,16 +40,18 @@ De bedoeling van dit labo is het geautomatiseerd opzetten van een AD en Deployme
 
 ### Relevante configuratie bestanden:
 
-- Vagrantfile
-- Vagrant-hosts.yml
-- srv-AD.ps1
-- srv-SCCM.ps1
-- srv-SCCM_config.ps1
+- [Vagrantfile](../../Vagrantfile)
+- [Vagrant-hosts.yml](../../vagrant-hosts.yml)
+- [srv-AD.ps1](../../provisioning/srv-AD.ps1)
+- [srv-SCCM.ps1](../../provisioning/srv-SCCM.ps1)
+- [srv-SCCM_config.ps1](../../provisioning/srv-SCCM_config.ps1)
 
 **Opmerking**: er zijn ook varianten van de powershell scripts met bv'-step1' toegevoegd in de naam. Dit zijn opgesplitste versies van de hierboven genoemde. Dit om uit te kunnen voeren tussen de nodige reboots van de servers tijdens provisioning.
 
 
 ## AD Server (srv-AD):
+
+* [srv-AD.ps1](../../provisioning/srv-AD.ps1)
 
 1. *config_basics*  
 basis configuratie uitvoeren op de netwerk interfaces.  
@@ -92,6 +94,8 @@ Hier gaan we de standaard gebruikte account "Vagrant" lid  maken van enkele bela
 
 ### Deel 1: prerequisites en installatie SCCM
 
+* [srv-SCCM.ps1](../../provisioning/srv-SCCM.ps1)
+
 1. *config_basics*  
 Net als voor srv-AD gaan we ipv6 uitschakelen en de interfaces hernoemen voor duidelijkheid. We stellen de default gateway en dns server adressen ook in met de ip van srv-AD, die deze rollen opneemt.
 
@@ -123,6 +127,8 @@ Een laatste SQL Server prerequisite om SCCM te kunnen laten installeren is de re
 De laatste en belangrijkste functie. Als voorbereiding hebben we eerst de volledige installatie via gui doorlopen om een setup.ini te kunnen genereren met de gewenste parameters. Deze .ini roepen we op in de command line om de setup zonder gebruikersinteractie uit te kunnen voeren. Een opmerking hierbij is dat deze ini zich op een geldig netwerkpad moet bevinden. Hiervoor Maken we de locatie van deze .ini een Windows share.
 
 ### Deel 2: configuratie binnen SCCM:
+
+* [srv-SCCM_config.ps1](../../provisioning/srv-SCCM_config.ps1)
 
 1. *prepare_SCCM_cmdlet*  
 Voor we SCCM kunnen beheren vanuit powershell moeten we de nodige Powershell commandlets importeren en de werklocatie instellen op wat SCCM verwacht.
