@@ -41,8 +41,13 @@ function config_adds {
 }
 
 # uitvoering
+
+function oproep_alle_functies {
 config_basics
 config_adds
+}
+
+oproep_alle_functies
 
 # extra:
 #Start-Sleep 120

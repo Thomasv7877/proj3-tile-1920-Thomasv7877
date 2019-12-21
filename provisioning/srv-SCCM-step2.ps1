@@ -44,8 +44,8 @@ function remote_delegate_control { # test
 }
 
 function install_adk { # werkt niet..
-    Start-Process -FilePath $ADKSetupFile -ArgumentList /features OptionId.DeploymentTools OptionId.UserStateMigrationTool /norestart /quiet /ceip off -NoNewWindow -Wait
-    Start-Process -FilePath $PESetupFile -ArgumentList /Features OptionId.WindowsPreinstallationEnvironment /norestart /quiet /ceip off -NoNewWindow -Wait
+    Start-Process -FilePath $ADKSetupFile -ArgumentList "/features OptionId.DeploymentTools OptionId.UserStateMigrationTool /norestart /quiet /ceip off" -NoNewWindow -Wait
+    Start-Process -FilePath $PESetupFile -ArgumentList "/Features OptionId.WindowsPreinstallationEnvironment /norestart /quiet /ceip off" -NoNewWindow -Wait
 }
 
 function install_adk2 { # werkt wel
@@ -70,7 +70,7 @@ function install_webserver { # bits toevoegen aan eerste xml ipv twee..
 
 function install_wsus {
     # wsus folder -> (C:\Sources\WSUS) C:\WSUS, conn string -> SRV-SCCM.thovan.gent
-    New-Item -Path C: -Name WSUS -ItemType Directory
+    New-Item -Path C:\ -Name WSUS -ItemType Directory
     #Install-WindowsFeature -ConfigurationFilePath "C:\vagrant\provisioning\wsus_prereq.xml"
     Install-WindowsFeature -Name UpdateServices-Services,UpdateServices-DB -IncludeManagementTools
     Start-Process -FilePath "C:\Program Files\Update Services\Tools\WsusUtil.exe" -ArgumentList "postinstall CONTENT_DIR=C:\WSUS SQL_INSTANCE_NAME=srv-SCCM.thovan.gent" -wait -NoNewWindow
@@ -140,12 +140,16 @@ function test {
 }
 
 # execution:
-# remote_delegate_control
-# install_adk2
-# install_webserver
-# install_wsus
-# change_sql_logon
-# extend_ad_schema
-# create_sql_user
-# correct_sql_name
-# install_sccm
+function oproep_alle_functies {
+remote_delegate_control
+install_adk2
+install_webserver
+install_wsus
+change_sql_logon
+extend_ad_schema
+create_sql_user
+correct_sql_name
+install_sccm
+}
+
+oproep_alle_functies

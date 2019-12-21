@@ -122,6 +122,20 @@ function match_vagrant_to_administrator {
     }
 }
 
+function srvADUitvoeren {
+    config_basics
+    config_adds
+    # reboot
+    dns_put_ip
+    dns_extra_zones
+    config_nat
+    config_dhcp
+    create_config_container
+    extend_ad_schema
+    config_firewall
+    match_vagrant_to_administrator
+}
+
 # operations:
 #Write-Output "wahtwoord = $password, hostname = $hostname"
 #Write-Output "$hostname.$dom_name"

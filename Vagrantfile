@@ -104,10 +104,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       # Run configuration script for the VM
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '.ps1'
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step1.ps1', reboot: true
+
       node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step1.ps1'
       node.vm.provision :reload
       node.vm.provision 'shell', inline: "write-host 'post reboot operaties'"
-      #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step2.ps1'
+
+      node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step2.ps1'
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-test.ps1'
       #node.vm.provision :reload
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-test.ps1'

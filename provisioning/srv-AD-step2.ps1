@@ -95,6 +95,7 @@ function config_firewall {
 
 
 # oproep:
+function oproep_alle_functies {
 match_vagrant_to_administrator
 dns_put_ip
 dns_extra_zones
@@ -103,3 +104,6 @@ config_dhcp
 create_config_container
 extend_ad_schema
 config_firewall
+}
+
+oproep_alle_functies

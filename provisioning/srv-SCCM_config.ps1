@@ -2,16 +2,16 @@
 # todo
 
 # functions:
-function prepare_SCCM_cmdlet {
+function prepare_SCCM_cmdlet { # twee keer utivoeren omdat psdrive er niet is na eerste uitvoer bij get-psdrive?
     Set-Location 'C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin'
     Import-Module .\ConfigurationManager.psd1
-    # indien setup.ini install PSDrive manueel aanmaken:
-    new-psdrive -Name "P01" -PSProvider "AdminUI.PS.Provider\CMSite" -Root "srv-SCCM.thovan.gent" -Description "P01 Primary Site"
+    # indien setup.ini install PSDrive manueel aanmaken: door -scope Global enkel de eerste keer ?
+    new-psdrive -Name "P01" -PSProvider "AdminUI.PS.Provider\CMSite" -Root "srv-SCCM.thovan.gent" -Description "P01 Primary Site"  -scope Global
     Set-Location P01:
 }
 
 function forestDiscovery { # ook manueel laten discoveren?
-    Set-CMDiscoveryMethod -ActiveDirectoryForestDiscovery -Enabled $true -EnableActiveDirectorySiteBoundaryCreation $true -EnableSubnetBoundaryCreation $true
+    Set-CMDiscoveryMethod -ActiveDirectoryForestDiscovery -Enabled $true -EnableActiveDirectorySiteBoundaryCreation $true -EnableSubnetBoundaryCreation $true -Sitecode "P01"
 }
 
 function boundaries {
@@ -97,15 +97,16 @@ function create_applications {
 
 function prep_deployment {
     $coll = New-CMDeviceCollection -Name "Windows 10" -LimitingCollectionName "All Systems"
+    $SiteCode = Get-PSDrive -PSProvider CMSITE
+    $collID = $coll.CollectionID
     Import-CMComputerInformation -CollectionName "Windows 10" -ComputerName "Client1" -MacAddress "08:00:27:8F:43:60" 
-    # geen '_' in computername! bovenstaande commando deployed niet (direct) naar gekozen collection?
-
+    # geen '_' in computername! bovenstaande commando deployed niet (direct) naar gekozen collection? opgelost met onderstaande
+    Invoke-WmiMethod -Path "ROOT\SMS\Site_$($SiteCode.Name):SMS_Collection.CollectionId='$collID'" -Name RequestRefresh -ComputerName "srv-SCCM.thovan.gent"
+    
     $bootimg_id = (Get-CMBootImage -Name "Boot image (x64)").packageid
     $osimg_id = (Get-CMOperatingSystemImage -Name "Windows 10 1904").packageid
-
     $passw = (ConvertTo-SecureString -String "vagrant" -AsPlainText -Force)
-    $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId $bootimg_id -OperatingSystemImagePackageId $osimg_id -OperatingSystemImageIndex 1 -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\vagrant" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client" -ConfigureBitLocker $false -ApplicationName ("Adobe Acrobat Reader DC","7-Zip","Notepad++") -IgnoreInvalidApplication $true
-    # opm: -ApplicationName ("name1","name2") om de apps later toe te voegen -LocalAdminPassword $passw -PartitionAndFormatTarget $true
+    $passw2 = (ConvertTo-SecureString -String "vagrant" -AsPlainText -Force)
 
     $StepVar1 = New-CMTSStepConditionVariable -OperatorType NotExists -ConditionVariableName _SMSTSClientCache
     $StepVar2 = New-CMTSStepConditionVariable -OperatorType NotEquals -ConditionVariableName _SMSTSMediaType -ConditionVariableValue OEMMedia
@@ -126,13 +127,15 @@ function prep_deployment {
         #$(New-CMTaskSequencePartitionSetting -PartitionRecovery -Name 'Recovery' -Size 100 -SizeUnit Percent)
     )     
     $TSStepUEFIPartition = New-CMTaskSequenceStepPartitionDisk -Name 'Partition Disk 0 - UEFI' -DiskType Gpt -DiskNumber 0 -PartitionSetting $UEFIPartitionScheme -IsBootDisk $true -Condition ($StepVar1,$StepVar2,$StepVar3,$StepVar4)
+    
+    $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId $bootimg_id -OperatingSystemImagePackageId $osimg_id -OperatingSystemImageIndex 1 -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\vagrant" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client" -ConfigureBitLocker $false -ApplicationName ("Adobe Acrobat Reader DC","7-Zip","Notepad++") -IgnoreInvalidApplication $true -LocalAdminPassword $passw2 -verbose
+    # opm: -ApplicationName ("name1","name2") om de apps later toe te voegen -LocalAdminPassword $passw -PartitionAndFormatTarget $true
     Set-CMTaskSequenceGroup -InputObject $taskseq -StepName "Install Operating System" -AddStep ($TSStepUEFIPartition, $TSStepBIOSPartition) -InsertStepStartIndex 1
-         
     New-CMTaskSequenceDeployment -InputObject $taskseq -Collection $coll -Availability MediaAndPxe -AllowFallback $true
 }
 
 # Execution:
-function uitvoer {
+function oproep_alle_functies {
 prepare_SCCM_cmdlet
 forestDiscovery
 boundaries

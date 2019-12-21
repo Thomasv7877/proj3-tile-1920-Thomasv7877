@@ -35,5 +35,9 @@ function join_domain {
 # REBOOT
 
 # Execution:
+function oproep_alle_functies {
 config_basics
 join_domain
+}
+
+oproep_alle_functies
