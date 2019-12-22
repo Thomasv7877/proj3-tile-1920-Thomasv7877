@@ -105,11 +105,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '.ps1'
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step1.ps1', reboot: true
 
+      #node.vm.provision 'shell', path: 'provisioning/srv-AD-test.ps1'
+
       node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step1.ps1'
       node.vm.provision :reload
-      node.vm.provision 'shell', inline: "write-host 'post reboot operaties'"
-
+      #node.vm.provision 'shell', inline: "write-host 'post reboot operaties'"
       node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step2.ps1'
+      # if (host['name'] = 'srv-SCCM')
+      #   #node.vm.provision :reload
+      #   node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '_config.ps1'
+      # end
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-test.ps1'
       #node.vm.provision :reload
       #node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-test.ps1'

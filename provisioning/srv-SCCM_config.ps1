@@ -2,7 +2,7 @@
 # todo
 
 # functions:
-function prepare_SCCM_cmdlet { # twee keer utivoeren omdat psdrive er niet is na eerste uitvoer bij get-psdrive?
+function prepare_SCCM_cmdlet {
     Set-Location 'C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole\bin'
     Import-Module .\ConfigurationManager.psd1
     # indien setup.ini install PSDrive manueel aanmaken: door -scope Global enkel de eerste keer ?
@@ -10,7 +10,7 @@ function prepare_SCCM_cmdlet { # twee keer utivoeren omdat psdrive er niet is na
     Set-Location P01:
 }
 
-function forestDiscovery { # ook manueel laten discoveren?
+function forestDiscovery { # TODO: extra discovery manieren?
     Set-CMDiscoveryMethod -ActiveDirectoryForestDiscovery -Enabled $true -EnableActiveDirectorySiteBoundaryCreation $true -EnableSubnetBoundaryCreation $true -Sitecode "P01"
 }
 
@@ -128,8 +128,8 @@ function prep_deployment {
     )     
     $TSStepUEFIPartition = New-CMTaskSequenceStepPartitionDisk -Name 'Partition Disk 0 - UEFI' -DiskType Gpt -DiskNumber 0 -PartitionSetting $UEFIPartitionScheme -IsBootDisk $true -Condition ($StepVar1,$StepVar2,$StepVar3,$StepVar4)
     
-    $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId $bootimg_id -OperatingSystemImagePackageId $osimg_id -OperatingSystemImageIndex 1 -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\vagrant" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client" -ConfigureBitLocker $false -ApplicationName ("Adobe Acrobat Reader DC","7-Zip","Notepad++") -IgnoreInvalidApplication $true -LocalAdminPassword $passw2 -verbose
-    # opm: -ApplicationName ("name1","name2") om de apps later toe te voegen -LocalAdminPassword $passw -PartitionAndFormatTarget $true
+    $taskseq = New-CMTaskSequence -InstallOperatingSystemImage -Name "deploy os" -BootImagePackageId $bootimg_id -OperatingSystemImagePackageId $osimg_id -OperatingSystemImageIndex 1 -JoinDomain DomainType -DomainName "thovan.gent" -DomainOrganizationUnit "LDAP://CN=Computers,DC=thovan,DC=gent" -DomainAccount "thovan\administrator" -DomainPassword $passw -ApplyAll $true -Description "Windows 10 installeren op de client" -ConfigureBitLocker $false -ApplicationName ("Adobe Acrobat Reader DC","7-Zip","Notepad++") -IgnoreInvalidApplication $true -verbose
+    # opm: -ApplicationName ("name1","name2") om de apps later toe te voegen -LocalAdminPassword $passw2 -PartitionAndFormatTarget $true
     Set-CMTaskSequenceGroup -InputObject $taskseq -StepName "Install Operating System" -AddStep ($TSStepUEFIPartition, $TSStepBIOSPartition) -InsertStepStartIndex 1
     New-CMTaskSequenceDeployment -InputObject $taskseq -Collection $coll -Availability MediaAndPxe -AllowFallback $true
 }
@@ -148,3 +148,5 @@ import_os
 create_applications
 prep_deployment
 }
+
+#oproep_alle_functies

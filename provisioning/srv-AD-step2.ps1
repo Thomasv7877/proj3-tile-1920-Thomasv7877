@@ -79,7 +79,7 @@ function extend_ad_schema {
     $PWord = (ConvertTo-SecureString -String $PWordPlain -AsPlainText -Force)
     $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
 
-    Start-Process -FilePath C:\Sources\SC_Configmgr_SCEP_1902\SMSSETUP\BIN\X64\extadsch.exe -Wait -Credential $credential
+    Start-Process -FilePath C:\Sources\SC_Configmgr_SCEP_1902\SMSSETUP\BIN\X64\extadsch.exe -Wait -NoNewWindow -Verbose -Credential $credential
 }
 
 function config_firewall {
@@ -98,12 +98,12 @@ function config_firewall {
 function oproep_alle_functies {
 match_vagrant_to_administrator
 dns_put_ip
-dns_extra_zones
+#dns_extra_zones
 config_nat
 config_dhcp
 create_config_container
-extend_ad_schema
 config_firewall
+extend_ad_schema
 }
 
 oproep_alle_functies

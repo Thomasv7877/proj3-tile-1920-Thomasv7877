@@ -87,12 +87,13 @@ function change_sql_logon {
 }
 
 function extend_ad_schema { # alleen op srv-AD?
-    $PWordPlain = "vagrant"
-    $User = "thovan\Administrator"
-    $PWord = (ConvertTo-SecureString -String $PWordPlain -AsPlainText -Force)
-    $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
+    # $PWordPlain = "vagrant"
+    # $User = "thovan\Administrator"
+    # $PWord = (ConvertTo-SecureString -String $PWordPlain -AsPlainText -Force)
+    # $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
 
-    Start-Process -FilePath C:\Sources\SC_Configmgr_SCEP_1902\SMSSETUP\BIN\X64\extadsch.exe -Wait -Credential $credential
+    Start-Process -FilePath C:\Sources\SC_Configmgr_SCEP_1902\SMSSETUP\BIN\X64\extadsch.exe -Wait -NoNewWindow -verbose
+    # -Credential $credential
 }
 
 function create_sql_user {
@@ -146,9 +147,9 @@ install_adk2
 install_webserver
 install_wsus
 change_sql_logon
-extend_ad_schema
 create_sql_user
 correct_sql_name
+extend_ad_schema
 install_sccm
 }
 
