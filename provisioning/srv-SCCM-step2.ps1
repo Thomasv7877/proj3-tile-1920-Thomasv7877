@@ -43,12 +43,12 @@ function remote_delegate_control { # test
 
 }
 
-function install_adk { # werkt niet..
+function install_adk {
     Start-Process -FilePath $ADKSetupFile -ArgumentList "/features OptionId.DeploymentTools OptionId.UserStateMigrationTool /norestart /quiet /ceip off" -NoNewWindow -Wait
     Start-Process -FilePath $PESetupFile -ArgumentList "/Features OptionId.WindowsPreinstallationEnvironment /norestart /quiet /ceip off" -NoNewWindow -Wait
 }
 
-function install_adk2 { # werkt wel
+function install_adk2 { # werkt 100%
     Write-Output "Installing required items from ADK"
     $Command = $ADKSetupFile
     $Parameters = "/quiet", "/features OptionId.DeploymentTools OptionId.UserStateMigrationTool"
@@ -87,13 +87,12 @@ function change_sql_logon {
 }
 
 function extend_ad_schema { # alleen op srv-AD?
-    # $PWordPlain = "vagrant"
-    # $User = "thovan\Administrator"
-    # $PWord = (ConvertTo-SecureString -String $PWordPlain -AsPlainText -Force)
-    # $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
+    $PWordPlain = "vagrant"
+    $User = "thovan\Administrator"
+    $PWord = (ConvertTo-SecureString -String $PWordPlain -AsPlainText -Force)
+    $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
 
-    Start-Process -FilePath C:\Sources\SC_Configmgr_SCEP_1902\SMSSETUP\BIN\X64\extadsch.exe -Wait -NoNewWindow -verbose
-    # -Credential $credential
+    Start-Process -FilePath C:\Sources\SC_Configmgr_SCEP_1902\SMSSETUP\BIN\X64\extadsch.exe -Wait -NoNewWindow -verbose -Credential $credential
 }
 
 function create_sql_user {

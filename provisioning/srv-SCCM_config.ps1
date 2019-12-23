@@ -12,6 +12,7 @@ function prepare_SCCM_cmdlet {
 
 function forestDiscovery { # TODO: extra discovery manieren?
     Set-CMDiscoveryMethod -ActiveDirectoryForestDiscovery -Enabled $true -EnableActiveDirectorySiteBoundaryCreation $true -EnableSubnetBoundaryCreation $true -Sitecode "P01"
+    Invoke-CMForestDiscovery -SiteCode "P01"
 }
 
 function boundaries {

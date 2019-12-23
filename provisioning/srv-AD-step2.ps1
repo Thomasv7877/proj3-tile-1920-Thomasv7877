@@ -10,6 +10,7 @@ $mask = "255.255.255.0"
 $dom_name = "thovan.gent"
 $netbios_name = "THOVAN"
 $scope_name = "main_scope"
+$ip_adr = "192.168.56.31"
 
 # functies:
 function match_vagrant_to_administrator {
@@ -21,6 +22,7 @@ function match_vagrant_to_administrator {
 
 function dns_put_ip{
     Set-DnsClientServerAddress -InterfaceAlias $hostonly_name -ServerAddresses ($hostonly_ip)
+    New-NetRoute -InterfaceAlias $hostonly_name -DestinationPrefix "0.0.0.0/0" -NextHop $ip_adr
 }
     
 function dns_extra_zones{ # todo: de reverse zone?
