@@ -1,4 +1,4 @@
-# Projecten 3, SCCM labo:
+# Projecten 3: SCCM labo
 <br>
 
 # Inoud:
@@ -49,245 +49,325 @@ De bedoeling van dit labo is het geautomatiseerd opzetten van een AD en Deployme
 **Opmerking**: er zijn ook varianten van de powershell scripts met bv'-step1' toegevoegd in de naam. Dit zijn opgesplitste versies van de hierboven genoemde. Dit om uit te kunnen voeren tussen de nodige reboots van de servers tijdens provisioning.
 
 
-## AD Server (srv-AD):
+# AD Server (srv-AD):
 
 * [srv-AD.ps1](../../provisioning/srv-AD.ps1)
 
-1. *config_basics*  
+### 1. config_basics  
 basis configuratie uitvoeren op de netwerk interfaces.  
 ipv6 uitschakelen en duidelijke namen toewijzen aan de nat en hostonly interface.
 
-2. *config_adds*  
-We installeren de domain services en configureren een forest.  
+### 2. config_adds  
+We installeren de domain services en configureren een forest. De gekozen domeinnaam is 'thovan.gent'  
 
-3. *dns_put_ip*  
-Op de hostonly interface passen we het DNS adres in van 127.0.0.1 naar 192.168.56.31. Het blijven gebruiken van het loopback adres heeft in het verleden al voor problemen gezorgd bij replicatie wanneer er twee domein controllers bestaan. Dat is hier niet het geval. Toch pas ik het aan om zeker te zijn.
+  **REBOOT**
 
-4. *dns_extra_zones*  
-We maken een reverse dns zone aan voor ons gebruikte subnet. Dit gebeurt niet direct automatisch heb ik gevonden.
+### 3. dns_put_ip  
+Op de hostonly interface passen we het DNS adres aan van 127.0.0.1 naar 192.168.56.31. Het blijven gebruiken van het loopback adres heeft in het verleden al voor problemen gezorgd bij replicatie wanneer er twee domein controllers bestaan. Dat is hier niet het geval. Toch pas ik het aan om zeker te zijn.
 
-5. *config_nat*  
-We stellen srv-AD als NAT-toegangsrouter. Dit was niet verplicht maar werd altijd gedaan in vorige labo's en ik vond dat het in dit scenario ook paste. Het gebruikte commando om NAT te configureren na role based installatie, 'netsh', is in mijn ervaring niet meer 100% compatibel op Windows Server 2019. Het is tegenwoordig nog mogelijk om bijvoorbeeld internettoegang te verschaffen voor een client maar na herstart van srv-AD werkt dit niet meer.
+### 4. dns_extra_zones  
+We maken een reverse dns zone aan voor ons gebruikte subnet. Dit gebeurt niet direct automatisch heb ik gevonden. Een optionele stap.
 
+### 5. config_nat  
+We stellen srv-AD als NAT-toegangsrouter. Dit was niet verplicht maar werd altijd gedaan in vorige labo's en ik vond dat het in dit scenario ook paste. Het gebruikte commando om NAT te configureren na role based installatie, 'netsh', is in mijn ervaring niet meer 100% compatibel op Windows Server 2019. Het is tegenwoordig nog mogelijk om bijvoorbeeld internettoegang te verschaffen voor een client maar na herstart van srv-AD werkt dit niet meer.  
+Wat wel mogelijk zou kunnen werken is het deployen van een NAT virtuele switch zoals [hier](https://www.petri.com/using-nat-virtual-switch-hyper-v) uitgelegd. We moeten dan wel eerst de 'hyper-v' rol installeren. Hier was ik geen voorstander van omdat we dan virtualisatie binnen virtualisatie hadden gebruikt.
 
-6. *config_dhcp*  
+### 6. config_dhcp  
 We installeren de DHCP rol en stellen srv-AD in als DHCP server. De gebruikte range is van 192.168.56.12 naar 192.168.56.254. We vergeten ook niet enkele belangrijke opties in te stellen zoals het ip voor de DNS server en default gateway. Zonder dit zou pxe boot falen.  
 Er werd ook een workaround gebruikt om deze instelling te kunnen maken. De standaard gebruikte account op deze base box is "Vagrant". Deze account heeft echter niet de juiste credentials om DHCP instellingen te maken. Dus werd er CimSession gemaakt met de credentials van "Administrator".
 
-7. *create_config_container*  
-We maken de System Management Container aan. Dit is een prerequisite voor SCCM.
+### 7. create_config_container  
+We maken de System Management Container aan. Deze container zal gebruikt worden om data te kunnen publiceren naar de Active Directory. Het is één van de prerequisites voor SCCM.  
+Controle delegeren naar srv-SCCM zullen we later moeten doen omdat deze machine op dit moment nog niet bestaat.  
+Voor duidelijkheid, de uitvoeringsvolgorde van provisioning scripts is:  
+`srv-AD_step1.ps1 > srv-AD_step2.ps1 > srv-SCCM_step1.ps1 > srv-SCCM_step2.ps1 > srv-SCCM_config.ps1`
 
-8. *extend_ad_schema*  
-Een andere SCCM preresuisite: het active directory schema uitbreiden. Dit kan gedaan worden via een exe die hier speciaal voor dient in de installatiemedia van SCCM. Om deze exe juist te kunnen laten uitvoeren moeten we weer hogere provileges hebben dan wat de standaard "Vagrant" account heeft. Deze keer gebruiken we een credential object met de rechten van de "Administrator" account.
+### 8. extend_ad_schema  
+Een andere SCCM preresuisite: het active directory schema uitbreiden. Dit kan gedaan worden via een exe die hier speciaal voor dient in de installatiemedia van SCCM. Om deze exe juist te kunnen laten uitvoeren moeten we weer hogere provileges hebben dan wat de standaard "Vagrant" account heeft. Deze keer gebruiken we een credential object met de rechten van de "Administrator" account. Het resultaat van de uitvoering is terug te vinden in `C:\ExtADSch.txt`
 
-9. *config_firewall*  
-Om srv-AD en srv-SCCM correct met elkaar te kunnen laten communiceren gaan we group policies geruiken die de gewenste firewall instellingen maken. Deze group policies werden eers manueel aangemaakt en gexporteerd. In deze functie worden ze terug geimporteerd.  
-Specifiek gaan we poorten openen voor:
-    * File en Printer sharing  
-    * SQL Replication
+### 9. config_firewall  
+Om srv-AD en srv-SCCM correct met elkaar te kunnen laten communiceren gaan we group policies geruiken die de gewenste firewall instellingen zullen maken. Deze group policies werden eerst manueel aangemaakt en dan geexporteerd. In deze functie worden ze terug geimporteerd.  
+Specifiek gaan we regels maken voor:
+  * File en Printer sharing (*voorgedefinieerd*) 
+  * Windows Management Instrumentation (*voorgedefinieerd*)
+  * SQL Replication (poorten 1433 en 4022)
 
-10. *match_vagrant_to_administrator*  
-Hier gaan we de standaard gebruikte account "Vagrant" lid  maken van enkele belangrijke groepen voor Active Directory en SCCM. Dit om het gebruik van andere credentials en uitvoeren van commando's in een speciale sessie in de toekomst te vermijden.
+### 10. match_vagrant_to_administrator  
+Hier gaan we de standaard gebruikte account door onze Bento Boxes, "Vagrant", lid  maken van enkele belangrijke groepen voor Active Directory en SCCM. Dit om het gebruik van andere credentials en uitvoeren van commando's in een speciale sessie in de toekomst te vermijden.
 
 
-## Deployment Server ( srv-SCCM):
+# Deployment Server ( srv-SCCM):
 
-### Deel 1: prerequisites en installatie SCCM
+## Deel 1: prerequisites en installatie SCCM
 
 * [srv-SCCM.ps1](../../provisioning/srv-SCCM.ps1)
 
-1. *config_basics*  
+### 1. config_basics  
 Net als voor srv-AD gaan we ipv6 uitschakelen en de interfaces hernoemen voor duidelijkheid. We stellen de default gateway en dns server adressen ook in met de ip van srv-AD, die deze rollen opneemt.
 
-2. *join_domain*  
-Dit toestel moet lid worden van het domein. Om deze actie uit te kunnen voeren gerbuiken we ook een credential.
+### 2. join_domain  
+Dit toestel moet lid worden van het domein. Om deze actie uit te kunnen voeren gebruiken we ook een credential.
 
-3. *remote_delegate_control*  
-Wat moet gebeuren is dat srv-SCCM controle moet krijgen over de 'System Management' container. Dit is nodig om de SCCM omgeving juist te kunnen laten werken in het domein. Normaal gezien wordt dit gedaan vanop de AD Server. Het probleem is dat eerst srv-AD volledig geprovisioned wordt, daarna srv-SCCM volledig. Het probleem is dus dat we de controle over de container niet kunnen geven aan een toestel dat nog niet bestaat (nog niet geprovisioned is). Mijn oplossing is deze operatie remote uitvoeren op srv-AD tijdens de provisioning van srv-SCCM. Concreet zetten we een PSSession op en laten we alle nodige operaties lopen binnen een script blok dat uitgevoerd wordt via deze PSSession.
+  **REBOOT**
 
-4. *install_adk2*  
-We gaan de setups met nodige functies van ADK en ADK PE silent laten utivoeren. ADK is een belangrijke requirement voor SCCM.
+### 3. remote_delegate_control  
+Wat moet gebeuren is dat srv-SCCM controle moet krijgen over de 'System Management' container. Dit is nodig om de SCCM omgeving juist te kunnen laten werken in het domein. Normaal gezien wordt dit gedaan vanop de AD Server. Het probleem is dat eerst srv-AD volledig geprovisioned wordt, daarna srv-SCCM volledig. Het probleem is dus dat we de controle over de container niet kunnen geven aan een toestel dat nog niet bestaat (nog niet geprovisioned is). Mijn oplossing is deze operatie remote uitvoeren op srv-AD tijdens de provisioning van srv-SCCM. Concreet zetten we een PSSession op en laten we alle nodige operaties lopen binnen een script blok dat uitgevoerd wordt via deze PSSession. Deze operaties behoren tot de meest complexe van de opstelling, zie [hier](http://justanothertechnicalblog.blogspot.com/2014/10/create-system-management-container-with.html) voor meer info.
 
-5. *install_wsus*  
-De IIS webserver is een andere prerequisite voor SCCM. De nodige functies en subfuncties zijn nogal specifiek. Ik heb daarom gekozen deze één keer via de gui in te stellen en de keuzes als XML te laten exporteren. Wat hier staat is het installeren van de IIS Windows Feature aan de hand van die XML.
+### 4. install_adk2  
+We gaan de setups met nodige functies van ADK en ADK PE silent laten uitvoeren. Dit is een offline install, de installatiebestanden werden reeds voorbereidend gedownload om tijd te besparen. ADK is een belangrijke requirement voor SCCM. Het is nodig om Windows 10 te kunnen deployen, de boot images worden er onder andere mee gegenereerd.
 
-6. *change_sql_logon*  
+### 5. install_webserver  
+De IIS webserver is een andere prerequisite voor SCCM. De nodige functies en subfuncties zijn nogal specifiek. Ik heb daarom gekozen deze één keer via de gui in te stellen en de keuzes als XML te laten exporteren. Wat hier staat is het installeren van de IIS Windows Feature aan de hand van die XML (`webserver_prereq_full.xml`).  
+  * Features:
+    * .Net Framework 3.5 Features [Install all sub features]
+    * .Net Framework 4.5 Features [Install all sub features]
+    * BITS
+    * Remote Differential Compression  
+  * Roles Services:  
+    * Common HTTP Features – Default Document, Static Content.  
+    * Application Development – .NET Extensibility 3.5 and 4.5. Select ASP .NET 3.5, ISAPI extensions, ASP .NET 4.5.
+    * Security – Windows Authentication.
+    * IIS 6 Management Compatibility – IIS Management Console, IIS 6 Metabase Compatibility, WMI Compatibility and IIS Management Scripts and Tools.
+
+### 6. install_wsus  
+Om later updates door te kunnen duwen naar clients hebben we WSUS (Windows Server Update Services) nodig. Eerst installeren we de nodige WindowsFeature. Dan voeren we de post-install silent uit. We geven de locatie op waar updates opgeslagen zullen worden (`C:\WSUS`) en geven de juiste string op voor onze SQL Server instantie (`srv-SCCM.thovan.gent`).  
+**Opmerking**: *We voorzien WSUS maar zullen het niet verder gebruiken in de opstelling. De eindstap van de opgave was om een client correct te deployen. Het onderhouden van deze Client met updates maakte er geen deel van uit. Het zou ook extra netwerkverkeer hebben geintroduceerd in de opstelling.*
+
+### 7. change_sql_logon  
 We verranderen de logon account waarmee de SQL Server service gestart wordt. Dit om connectie problemen te vermijden tijdens de installatie van SCCM. Er wordt verwacht dat deze logon hetzelfde is als de hostname, 'srv-SCCM' dus.
 
-7. *extend_ad_schema*  
-Een andere SCCM preresuisite: het active directory schema uitbreiden. Dit kan gedaan worden via een exe die hier speciaal voor dient in de installatiemedia van SCCM. Om deze exe juist te kunnen laten uitvoeren moeten we weer hogere provileges hebben dan wat de standaard "Vagrant" account heeft. Deze keer gebruiken we een credential object met de rechten van de "Administrator" account.
+### 8. extend_ad_schema  
+Een andere SCCM preresuisite: het active directory schema uitbreiden. Dit kan gedaan worden via een exe die hier speciaal voor dient, in de installatiemedia van SCCM. Om deze exe juist te kunnen laten uitvoeren moeten we weer hogere provileges hebben dan wat de standaard "Vagrant" account heeft. Deze keer gebruiken we een credential object met de rechten van de "Administrator" account.  
+**Opmerking**: *Het extenden van het AD schema wordt voor een tweede keer gedaan. Soms wordt dit niet correct uitgevoerd tijdens provisioning, zelf met aangepaste credentials. Meerwaals uitvoeren heeft overigens geen negatieve gevolgen.*
 
-8. *create_sql_user*  
-We moeten SQL Server kunnen gebruiken met de standaard gebruikte account 'Vagrant'. We stellen dus enkele queries op om 'Vagrant' een geldige SQL Server gebruiker te maken, deze kunnen daarna opgeroepen worden met Powershell via 'invoke-sqlcmd'.
+### 9. create_sql_user  
+We moeten SQL Server kunnen gebruiken met de standaard gebruikte account 'Vagrant'. We stellen dus enkele queries op om 'Vagrant' een geldige SQL Server gebruiker te maken, deze kunnen daarna opgeroepen worden in Powershell via 'invoke-sqlcmd'.
 
-9. *correct_sql_name*  
-Een laatste SQL Server prerequisite om SCCM te kunnen laten installeren is de reeds bestaande server naam te verranderen naar de hostname. De techniek is hetzelfde als bij de vorige functie: nodige queries opstellen en uitvoeren via de Powershell SQL Server commandlet ervoor.
+### 10. correct_sql_name  
+Een laatste SQL Server prerequisite om SCCM te kunnen laten installeren is de reeds bestaande server naam te verranderen naar de hostname. Deze moeten hetzelfde zijn. De techniek is hetzelfde als bij de vorige functie: nodige queries opstellen en uitvoeren via de Powershell SQL Server commandlet ervoor.
 
-10. *install_sccm*  
-De laatste en belangrijkste functie. Als voorbereiding hebben we eerst de volledige installatie via gui doorlopen om een setup.ini te kunnen genereren met de gewenste parameters. Deze .ini roepen we op in de command line om de setup zonder gebruikersinteractie uit te kunnen voeren. Een opmerking hierbij is dat deze ini zich op een geldig netwerkpad moet bevinden. Hiervoor Maken we de locatie van deze .ini een Windows share.
+### 11. install_sccm  
+De laatste en belangrijkste functie. Als voorbereiding hebben we eerst de volledige installatie via gui doorlopen om een setup.ini te kunnen genereren met de gewenste installatie parameters. Deze .ini roepen we op in de command line om de setup zonder gebruikersinteractie uit te kunnen voeren. Een opmerking hierbij is dat deze ini zich op een geldig netwerkpad moet bevinden. Hiervoor maken we de locatie van deze .ini een Windows share.  
+Inhoud van `setup.ini`:
+  ```ini
+    [Identification]
+    Action=InstallPrimarySite
 
-### Deel 2: configuratie binnen SCCM:
+    [Options]
+    ProductID=EVAL # zelf in te stellen nadat ini gegenereerd is
+    SiteCode=P01
+    SiteName=Ronse Site
+    SMSInstallDir=C:\Program Files\Microsoft Configuration Manager
+    SDKServer=srv-SCCM.thovan.gent
+    RoleCommunicationProtocol=HTTPorHTTPS
+    ClientsUsePKICertificate=0
+    PrerequisiteComp=1
+    PrerequisitePath=C:\Sources\SC_Configmgr_SCEP_1902_updates
+    ManagementPoint=srv-SCCM.thovan.gent
+    ManagementPointProtocol=HTTP
+    DistributionPoint=srv-SCCM.thovan.gent
+    DistributionPointProtocol=HTTP
+    DistributionPointInstallIIS=0
+    AdminConsole=1
+    JoinCEIP=0
+
+    [SQLConfigOptions]
+    SQLServerName=srv-SCCM.thovan.gent
+    DatabaseName=CM_P01
+    SQLSSBPort=4022
+
+    [CloudConnectorOptions]
+    ..
+  ```
+
+
+## Deel 2: configuratie binnen SCCM:
 
 * [srv-SCCM_config.ps1](../../provisioning/srv-SCCM_config.ps1)
 
-1. *prepare_SCCM_cmdlet*  
-Voor we SCCM kunnen beheren vanuit powershell moeten we de nodige Powershell commandlets importeren en de werklocatie instellen op wat SCCM verwacht.
+### 1. prepare_SCCM_cmdlet  
+Voor we SCCM kunnen beheren vanuit powershell moeten we eerst de nodige Powershell commandlets importeren.
+Dan maken we een Persisted Drive aan voor onze SCCM site "P01" en stellen we dit in als onze werk directory.
 
-2. *forestDiscovery*  
+### 2. forestDiscovery  
 Dit was niet echt deel van de opgave maar zorgt voor een meer volwaardige SCCM omgeving. We stellen 'Forest Discovery' in als een dsicovery methode. Op deze manier zullen we resources kunnen ontdekken in het domein.
+Met het tweede commando zullen we de discuvery expliciet oproepen. [Als we dit niet doen kunnen we tijdens deployment moeite hebben om de client lid te maken van het domein.]
 
-3. *boundaries*  
-Hier stellen we grenzen in voor de SCCM omgeving.
+### 3. boundaries  
+Hier stellen we grenzen in voor de SCCM omgeving. Grenzen zijn nodig om de client de site te kunnen laten vinden. Ook nodig door de Client voor het vinden van Applicaties, Boot Images en OS Images.
+De methode hiervoor is om eerst een Boundary Group te maken. Dan maken we een Boundary aan ingesteld met de AD Site die we aan deze Boundary Group toevoegen.  
+**Opmerking**: *Er werd voor Forest Discovery gekozen als discovery methode. Grenzen worden er automatisch mee ontdekt dus deze functie is in feite overbodig geworden.*
 
-4. *site_roles*  
+### 4. site_roles  
 Optioneel. Hier kennen we relevante site rollen toe zoals:
     - ApplicationCatalogWebServicePoint
     - ApplicationCatalogWebsitePoint
     - FallbackStatusPoint
 
-5. *dist_point_pxe_settings*  
-We wijzigen de PXE instellingen zodat we later met deze methode Windows 10 zouden kunnen deployen.
+### 5. dist_point_pxe_settings  
+We wijzigen de PXE instellingen op ons Distribution Point zodat we later via PXE Windows 10 zouden kunnen deployen. 
 
-6. *boot_images_settings*  
-We bereiden de Boot images voor. We stellen in dat deze moeten kunnen deployen vanuti PXE boot. Ook enabelen we Command Support. Hiermee kunnen we de opdrachtprompt openen tijdens deployment. Dit vergemakkelijkt troubleshooting. Wat ook neit vergeten mag worden is het distribueren van deze Boot Images.
+### 6. boot_images_settings  
+We bereiden de Boot images voor. We stellen in dat deze moeten kunnen deployen vanuti PXE boot. Ook enabelen we Command Support. Hiermee kunnen we de opdrachtprompt openen tijdens deployment. Dit vergemakkelijkt troubleshooting. Wat ook niet vergeten mag worden is het distribueren van deze Boot Images.
 
-7. *client_install_settings*  
-Ik heb er voor gekozen Automatic Client Push in te stellen. Eerst voegen we onze gebruikersaccount toe aan SCCM. Dan enabelen we Automatic Client Push. Dit zal nu uitgevoerd kunnen worden met de authorisatie van de juist toegevoegde gebruikersaccount 'Vagrant'.
+### 7. client_install_settings  
+Ik heb er voor gekozen Automatic Client Push in te stellen. Dit zorgt ervoor dat de Client automatisch geinstalleerd zal worden op door SCCM gedetecteerde netwerk resources. Eerst voegen we onze gebruikersaccount toe aan SCCM. Dan enabelen we Automatic Client Push. Dit zal nu uitgevoerd kunnen worden met de authorisatie van de juist toegevoegde gebruikersaccount 'Vagrant'.
 
-8. *create_network_access_account*  
+### 8. create_network_access_account  
 In versie '2012 R2' van SCCM was het nodig een network access account in te stellen om fouten tijdens deployment te vermijden. Dit is mogelijk het geval niet meer in deze versie, '1903'. Toch koos ik ervoor dit ook op te nemen in de provisioning.  
-Deze techniek is overgnomen uit één van de bronnen.
+Deze techniek is overgenomen uit één van de bronnen maar had aanpassingen nodig.
+Eigenlijk werken we analoog met hoe we het in de gui zouden doen. We vragen eerst de component "Software Distribution" op van onze Site. Dan is het de bedoeling dat we de EmbeddedPropertyList voor Network Access User Names aanvullen met onze Network Access Account (thovan\vagrant). Het probleem is dat deze EmbeddedPropertyList niet aangemaakt was na een clean install van SCCM. De oplossing was om i.p.v. de EmbeddedPropertyList op te vragen deze nieuw aan te maken. Dit is het verschilpunt met hoe in de [bron](https://www.oscc.be/sccm/configmgr/powershell/naa/Set-NAA-using-Powershell-in-CB/) wordt gewerkt. Deze oude techniek is ook te zien in `create_network_access_account_old`.
 
-9. *import_os*  
-Er is voorbereiding nodig alvorens we een Windows 10 image kunnen importeren in SCCM:
-    1. Download geldige Windows 10 iso
-    2. Open deze iso en haal de 'install.wim' er uit
-    3. Kopier deze wim naar een geldig netwerkpad.
-Het is de wim die we effectief toevoegen aan SCCM. Het laatste dat we doen is distribueren.
+### 9. import_os  
+Er is éénmalige voorbereiding nodig alvorens we een Windows 10 image kunnen importeren in SCCM:
+  1. Download geldige Windows 10 iso.
+  2. Open deze iso en haal de 'install.wim' er uit.
+  3. Kopieer deze wim naar een geldig netwerkpad.  
 
-10. *create_applications*  
+  Het is de wim die we effectief toevoegen aan SCCM. Het laatste dat we doen is distribueren.  
+  **Opmerking**: *De voorbereidingsstappen konden ook vrij eenvoudig gescript worden maar hadden de uitvoeringstijd dramatisch verlengd.*  
+
+### 10. create_applications  
 Het maken van een applicatie in SCCM bestaat telkens uit ruwweg dezelfde stappen:  
-    1. Creeer de applicatie in SCCM.
-    2. Maak een detectie clausule voor de applicatie.  
+  1. Creeer de applicatie in SCCM.
+  2. Maak een detectie clausule voor de applicatie.  
     Indien MSI is de productcode het eenvoudigst. Indien setup is het iets moeilijker en moeten we kijken naar zaken zoals het versienummer.
-    3. Maak een deployment voor de applicatie, voeg de detectie clausule hier aan toe.  
+  3. Maak een deployment type voor de applicatie, voeg de detectie clausule hier aan toe.  
     Het belangrijkste is het installatie commando. Dit moet silent zijn, dus zonder user interactie. Om dit mogelijk te maken voor Adobe Reader was een speciaal programma, de 'Adobe Customization Wizard' nodig om een speciale setup.exe te genereren met silent opties ingebouwd.
-    4. Distribueer de  applicatie.
+  4. Distribueer de  applicatie.
 
-11. *prep_deployment*  
+**Extra**: Silent installs  
+Dit is mijn manier om silent installs te maken, in mijn ogen het meest uitdagende aspect bij het toevoegen van applicaties in SCCM. Het is natuurlijk soms mogelijk om een setup.ini te gebruiken. Indien het een populaire applicatie is is Googelen mogelijk rapper.  
+  1. Voer de installatie van de applicatie uit vanuit de command line, stel hier in dat er een logfile weggeschreven wordt. Maak in de wizard de gewenste instellingen.
+  2. Haal uit deze logfile al de relevante variabelen.
+  3. Gebruik herhaaldelijks deze variabelen in de command line en roep de wizard op om ze te controleren tot alles daar ingevuld is zoals het hoord.
+  4. Het laatste is om silent opties toe te voegen in de command line (/S /q, verschilt per applicatie, tussen exe en msi). Dit commando is wat we moeten toevoegen aan het Deployment type.
+
+### 11. prep_deployment 
+
 Deze functie bestaat uit vijf delen:
-    1. Device collection maken voor waar onze client in zal komen.
-    2. Computer informatie van de client (mac is belangrijkst) importeren, deze computer ook toevoegen aan net aangemaakte device collection.
-    3. De Task Sequence bouwen:  
-        * Boot image opgeven.
-        * OS opgeven.
-        * Domein info meegeven zodat client er ook direct lid van wordt tijdens deployment.
-        * De te isntalleren appliaties opgeven.
-    4. Aangepaste partitionering. Dit komt door een verschil in hoe de Task Sequence gebouwd wordt tussen de gui en cmdlet.
-    5. De Task Sequence deployen naar de device collection gemaakt in stap 1.
+  1. Device collection maken voor onze client.
+  2. Computer informatie van de client (mac is belangrijkst) importeren, deze computer ook toevoegen aan net aangemaakte device collection. Soms duurt het een tijd voor de Client hier effectief verschijnt. We updaten daarom de memberships van de Device Collection om dit proces te versnellen.
+  3. Aangepaste partitionering. Dit is nodig door een verschil in hoe de Task Sequence gebouwd wordt tussen de gui en cmdlet.
+  4. De Task Sequence bouwen, de belangrijkse opties:  
+      * Boot image opgeven.
+      * OS opgeven.
+      * Domein info meegeven zodat client er ook direct lid van wordt tijdens deployment.
+      * De te isntalleren appliaties opgeven.
+  5. De Task Sequence deployen naar de device collection gemaakt in stap 1.
 
-## Windows 10 Client:
+# Windows 10 Client:
 
-De client is een lege Windows 10 VM die we manueel aanmaken in Virtualbox. Hierna stellen we PXE in als boot methode, wijzigen we de Nat interface naar een compatiblele (met de opstelling) Hostony interface en zorgen we dat het MAC adres overeen komt met wat we ingesteld werd tijdens de provisioning van srv-SCCM.
+De client is een lege Windows 10 VM die we manueel aanmaken in Virtualbox. Hierbij stellen we PXE in als boot methode, wijzigen we de Nat interface naar een compatiblele (met de opstelling) Hostonly interface en zorgen we dat het MAC adres overeen komt met wat we ingesteld werd tijdens de provisioning van srv-SCCM.
 
-## Extra info: Vagrant
+# Extra info: Vagrant
 
-* In de Vagrantfile staat een methode 'extra_vbox_settings' die adhv het de tool 'modifyvm' enkele Virtualbox instellingen van de srv-AD en srv-SCCM wijzigt, het is interessant deze hier even te overlopen:
+* ModifyVM   
+In de `Vagrantfile` staat een methode 'extra_vbox_settings' die adhv het de tool 'modifyvm' enkele Virtualbox instellingen van de srv-AD en srv-SCCM wijzigt, het is interessant deze hier even te overlopen:
 
-```ruby
-def extra_vbox_settings(vm)
-  vm.provider :virtualbox do |vbw|
-    vbw.gui = true
-    vbw.customize ["modifyvm", :id, "--vram", "256"]
-    vbw.customize ["modifyvm", :id, "--accelerate3d", "on"]
-    vbw.customize ["modifyvm", :id, "--accelerate2dvideo", "on"]
-    vbw.customize ["modifyvm", :id, "--graphicscontroller", "vboxsvga"]
-    vbw.customize ["modifyvm", :id, "--paravirtprovider", "default"] # "hyperv" is buggy?
-    vbw.customize ["modifyvm", :id, "--clipboard", "bidirectional"]
-    vbw.customize ["modifyvm", :id, "--draganddrop", "bidirectional"]
-    vbw.customize ["modifyvm", :id, "--memory", 4096]
-    vbw.customize ["modifyvm", :id, "--cpus", 2]
+  ```ruby
+  def extra_vbox_settings(vm)
+    vm.provider :virtualbox do |vbw|
+      vbw.gui = true
+      vbw.customize ["modifyvm", :id, "--vram", "256"]
+      vbw.customize ["modifyvm", :id, "--accelerate3d", "on"]
+      vbw.customize ["modifyvm", :id, "--accelerate2dvideo", "on"]
+      vbw.customize ["modifyvm", :id, "--graphicscontroller", "vboxsvga"]
+      vbw.customize ["modifyvm", :id, "--paravirtprovider", "default"] # "hyperv" is buggy?
+      vbw.customize ["modifyvm", :id, "--clipboard", "bidirectional"]
+      vbw.customize ["modifyvm", :id, "--draganddrop", "bidirectional"]
+      vbw.customize ["modifyvm", :id, "--memory", 4096]
+      vbw.customize ["modifyvm", :id, "--cpus", 2]
+    end
   end
-end
-```
+  ```
 
-* Om te kunnen rebooten tijdens de uitvoer van onze scripts gebruiken we 'vagrant-reload'  
-Op te roepen via bv `node.vm.provision :reload` in de Vagrantfile
+* vagrant-reload  
+Om te kunnen rebooten tijdens de uitvoer van onze scripts gebruiken we de plugin 'vagrant-reload'  
+Op te roepen via bv `node.vm.provision :reload` in de Vagrantfile. Compatibiliteit met de gebruikte Windows 10 Benno Boxes is niet 100%, zelf niet na aanpassen van WinRM opties als volgt in `Vagrantfile`:
+  ```ruby
+  config.winrm.timeout = 200 # timeouts vergroten voor lange provisioning tijden
+  config.winrm.retry_limit = 15
+  config.winrm.retry.delay = 20
+  config.winrm.ssl_peer_verification = false
+  config.winrm.transport = :plaintext # WinRM moet plaintext werken, anders werkt de plugin niet
+  config.winrm.basic_auth_only = true
+  ```
 
 # Reproductie:
 
 1. Voeg volgende base boxes toe aan Vagrant:
-```
-vagrant box add gusztavvargadr/windows-server
-vagrant box add gusztavvargadr/sql-server
-```
+    ```
+    vagrant box add gusztavvargadr/windows-server
+    vagrant box add gusztavvargadr/sql-server
+    ```
 2. Voeg de reboot plugin toe aan Vagrant:
-```
-vagrant plugin install vagrant-reload
-```
+    ```
+    vagrant plugin install vagrant-reload
+    ```
 3. Maak een vagrant omgeving (in een gewenste map):
-```
-vagrant init
-```
+    ```
+    vagrant init
+    ```
 4. Kopieer de vagrant skeleton  van bertvv <https://github.com/bertvv/vagrant-shell-skeleton> naar deze nieuwe Vagrant omgeving
 
-5. Wijzig vagrantfile en vagrant-hosts.yml als volgt:
-```ruby
-..
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.ssh.insert_key = false
-  config.winrm.timeout = 200
-  config.winrm.retry_limit = 15
-  config.winrm.retry.delay = 20
-  config.winrm.ssl_peer_verification = false
-  config.winrm.transport = :plaintext
-  config.winrm.basic_auth_only = true
-  hosts.each do |host|
-    config.vm.define host['name'] do |node|
-      node.vm.box = host['box'] ||= DEFAULT_BASE_BOX
-      if(host.key? 'box_url')
-        node.vm.box_url = host['box_url']
-      end
+5. Wijzig `Vagrantfile` en `vagrant-hosts.yml` als volgt:
+    ```ruby
+    ..
+    Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+      config.ssh.insert_key = false
+      config.winrm.timeout = 200
+      config.winrm.retry_limit = 15
+      config.winrm.retry.delay = 20
+      config.winrm.ssl_peer_verification = false
+      config.winrm.transport = :plaintext
+      config.winrm.basic_auth_only = true
+      hosts.each do |host|
+        config.vm.define host['name'] do |node|
+          node.vm.box = host['box'] ||= DEFAULT_BASE_BOX
+          if(host.key? 'box_url')
+            node.vm.box_url = host['box_url']
+          end
 
-      node.vm.hostname = host['name']
-      node.vm.network :private_network, network_options(host)
-      custom_synced_folders(node.vm, host)
+          node.vm.hostname = host['name']
+          node.vm.network :private_network, network_options(host)
+          custom_synced_folders(node.vm, host)
 
-      extra_vbox_settings(node.vm)
-      
-      # Run configuration script for the VM
-      node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step1.ps1'
-      node.vm.provision :reload
-      node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step2.ps1'
-      if(host['name']? 'srv-SCCM')
-        node.vm.provision :reload
-        node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '_config.ps1'
+          extra_vbox_settings(node.vm)
+          
+          # Run configuration script for the VM
+          node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step1.ps1'
+          node.vm.provision :reload
+          node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '-step2.ps1'
+          if (host['name'] = 'srv-SCCM')
+            #node.vm.provision :reload # geen tweede reboot nodig
+            node.vm.provision 'shell', path: 'provisioning/' + host['name'] + '_config.ps1'
+          end
+        end
       end
     end
-  end
-end
-```
-```yml
-- name: srv-AD
-  ip: 192.168.56.31
-  synced_folders:
-    - src: H:\SHARED
-      dest: C:\Sources
-- name: srv-SCCM
-  box: gusztavvargadr/sql-server
-  ip: 192.168.56.32
-  synced_folders:
-    - src: H:\SHARED
-      dest: C:\Sources
-```
+    ```
+    ```yml
+    - name: srv-AD
+      ip: 192.168.56.31
+      synced_folders:
+        - src: H:\SHARED # de map waar al onze installatiemedia en pre-gedownloade bestanden staan
+          dest: C:\Sources
+    - name: srv-SCCM
+      box: gusztavvargadr/sql-server
+      ip: 192.168.56.32
+      synced_folders:
+        - src: H:\SHARED
+          dest: C:\Sources
+    ```
 6. Download de nodige installatiebestanden:  
     * Windows 10 installatiemedia (iso)
-    * MS ADK (voer uit en sla lokaal op)
-    * MS ADK PE (voer uit en sla lokaal op)
+    * MS ADK (voer uit en sla lokaal op voor latere offline install)
+    * MS ADK PE (voer uit en sla lokaal op voor latere offline install)
     * SCCM (Voer setup uit om extra 'Sources' bestanden te kunnen downloaden, kies om deze lokaal op te slaan en breek install af eens voltooid)
 
 7. Zorg voor volgende bestandsstructuur:
-    * 'vagrant' map:
+    * 'Sources' map:
         * ADK_NEW (bevat offline ADK bestanden)
         * ADK_PE_NEW (bevat offline ADK PE bestanden)
         * Windows10.iso (naam afhankelijk van gedownload bestand)
@@ -295,7 +375,7 @@ end
             * 7-zip
             * Adobe Reader DC
             * notepad++
-    * 'Sources' map:
+    * 'vagrant' map:
         * Provisioning ->
             * {0BA78A36-741F-4573-AAE4-1B2930AA3292} (Group policy)
             * {6EFCAB8F-75E9-48A6-8EE5-FFF481566812} (Group policy)
@@ -309,9 +389,9 @@ end
 (zie: ## Windows 10 Client)
 
 9. Provision srv-AD en srv-SCCM:
-```
-vagrant up
-```
+    ```
+    vagrant up
+    ```
 10. Start de lege Windows 10 VM, druk f12 voor pxe boot, selecteer de task sequence.
 
 # Test plan
