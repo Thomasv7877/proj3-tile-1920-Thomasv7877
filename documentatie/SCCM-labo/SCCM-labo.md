@@ -46,7 +46,7 @@ De bedoeling van dit labo is het geautomatiseerd opzetten van een AD en Deployme
 - [srv-SCCM_part1.ps1](../../provisioning/srv-SCCM_part1.ps1) / [srv-SCCM_part2.ps1](../../provisioning/srv-SCCM_part2.ps1)
 - [srv-SCCM_config.ps1](../../provisioning/srv-SCCM_config.ps1)
 
-**Opmerking**: er zijn ook varianten van de powershell scripts met bv'-step1' toegevoegd in de naam. Dit zijn opgesplitste versies van de hierboven genoemde. Dit om uit te kunnen voeren tussen de nodige reboots van de servers tijdens provisioning.
+**Opmerking**: De powershell scripts met bv '-step1' toegevoegd in de naam zijn opgesplitste versies van de originele scripts. Dit om uit te kunnen voeren tussen de nodige reboots van de servers tijdens provisioning.
 
 
 # AD Server (srv-AD):
