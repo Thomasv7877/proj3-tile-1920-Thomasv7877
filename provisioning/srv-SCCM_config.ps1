@@ -49,7 +49,7 @@ function client_install_settings {
     # ook account toevoegen/specifieeren? -> -AddAccount/chosenaccount "thovan\administrator"
 }
 
-function create_network_access_account {
+function create_network_access_account_old { # gebruikt bestaande PropertyList
     $NAA = "thovan\vagrant"
     #$pwd = (ConvertTo-SecureString -String "V@grant" -AsPlainText -Force)
     #New-CMAccount -Name $NAA -Password $pwd -Sitecode "P01"
@@ -66,6 +66,19 @@ function create_network_access_account {
     $embeddedproperylist.PropertyListName = "Network Access User Names"
     $prop.Values = $NAA
     $component.PropLists = $props
+    $component.Put() | Out-Null
+}
+
+function create_network_access_account { # maakt telkens nieuwe PropertyList aan, geen fouten
+    $NAA = "thovan\vagrant"
+    $SiteCode = Get-PSDrive -PSProvider CMSITE
+    $component = Get-WmiObject -class SMS_SCI_ClientComp -Namespace "root\sms\site_$($SiteCode.Name)"  | Where-Object {$_.ItemName -eq "Software Distribution"}
+
+    $new = [WmiClass] "root\sms\site_$($SiteCode.name):SMS_EmbeddedPropertyList"
+    $embeddedproperylist = $new.CreateInstance()
+    $embeddedproperylist.PropertyListName = "Network Access User Names"
+    $embeddedproperylist.Values = $NAA
+    $component.PropLists = $embeddedproperylist
     $component.Put() | Out-Null
 }
 
