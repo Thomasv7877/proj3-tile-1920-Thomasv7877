@@ -42,8 +42,8 @@ De bedoeling van dit labo is het geautomatiseerd opzetten van een AD en Deployme
 
 - [Vagrantfile](../../Vagrantfile)
 - [Vagrant-hosts.yml](../../vagrant-hosts.yml)
-- [srv-AD.ps1](../../provisioning/srv-AD.ps1)
-- [srv-SCCM.ps1](../../provisioning/srv-SCCM.ps1)
+- [srv-AD_part1.ps1](../../provisioning/srv-AD_part1.ps1) / [srv-AD_part2.ps1](../../provisioning/srv-AD_part2.ps1)
+- [srv-SCCM_part1.ps1](../../provisioning/srv-SCCM_part1.ps1) / [srv-SCCM_part2.ps1](../../provisioning/srv-SCCM_part2.ps1)
 - [srv-SCCM_config.ps1](../../provisioning/srv-SCCM_config.ps1)
 
 **Opmerking**: er zijn ook varianten van de powershell scripts met bv'-step1' toegevoegd in de naam. Dit zijn opgesplitste versies van de hierboven genoemde. Dit om uit te kunnen voeren tussen de nodige reboots van de servers tijdens provisioning.
@@ -51,7 +51,7 @@ De bedoeling van dit labo is het geautomatiseerd opzetten van een AD en Deployme
 
 # AD Server (srv-AD):
 
-* [srv-AD.ps1](../../provisioning/srv-AD.ps1)
+* [srv-AD_part1.ps1](../../provisioning/srv-AD_part1.ps1)
 
 ### 1. config_basics  
 basis configuratie uitvoeren op de netwerk interfaces.  
@@ -61,6 +61,8 @@ ipv6 uitschakelen en duidelijke namen toewijzen aan de nat en hostonly interface
 We installeren de domain services en configureren een forest. De gekozen domeinnaam is 'thovan.gent'  
 
   **REBOOT**
+
+* [srv-AD_part2.ps1](../../provisioning/srv-AD_part2.ps1)
 
 ### 3. dns_put_ip  
 Op de hostonly interface passen we het DNS adres aan van 127.0.0.1 naar 192.168.56.31. Het blijven gebruiken van het loopback adres heeft in het verleden al voor problemen gezorgd bij replicatie wanneer er twee domein controllers bestaan. Dat is hier niet het geval. Toch pas ik het aan om zeker te zijn.
@@ -100,7 +102,7 @@ Hier gaan we de standaard gebruikte account door onze Bento Boxes, "Vagrant", li
 
 ## Deel 1: prerequisites en installatie SCCM
 
-* [srv-SCCM.ps1](../../provisioning/srv-SCCM.ps1)
+* [srv-SCCM_part1.ps1](../../provisioning/srv-SCCM_part1.ps1)
 
 ### 1. config_basics  
 Net als voor srv-AD gaan we ipv6 uitschakelen en de interfaces hernoemen voor duidelijkheid. We stellen de default gateway en dns server adressen ook in met de ip van srv-AD, die deze rollen opneemt.
@@ -109,6 +111,8 @@ Net als voor srv-AD gaan we ipv6 uitschakelen en de interfaces hernoemen voor du
 Dit toestel moet lid worden van het domein. Om deze actie uit te kunnen voeren gebruiken we ook een credential.
 
   **REBOOT**
+
+* [srv-SCCM_part2.ps1](../../provisioning/srv-SCCM_part2.ps1)
 
 ### 3. remote_delegate_control  
 Wat moet gebeuren is dat srv-SCCM controle moet krijgen over de 'System Management' container. Dit is nodig om de SCCM omgeving juist te kunnen laten werken in het domein. Normaal gezien wordt dit gedaan vanop de AD Server. Het probleem is dat eerst srv-AD volledig geprovisioned wordt, daarna srv-SCCM volledig. Het probleem is dus dat we de controle over de container niet kunnen geven aan een toestel dat nog niet bestaat (nog niet geprovisioned is). Mijn oplossing is deze operatie remote uitvoeren op srv-AD tijdens de provisioning van srv-SCCM. Concreet zetten we een PSSession op en laten we alle nodige operaties lopen binnen een script blok dat uitgevoerd wordt via deze PSSession. Deze operaties behoren tot de meest complexe van de opstelling, zie [hier](http://justanothertechnicalblog.blogspot.com/2014/10/create-system-management-container-with.html) voor meer info.
@@ -443,51 +447,92 @@ Op te roepen via bv `node.vm.provision :reload` in de Vagrantfile. Compatibilite
 
 # Problemen:
 
-[TODO -> opkuisen]
+*Niet zo belangrijk als de rest van de documentatie maar het schetst een beeld van hoe ik de opstelling heb uitgewerkt, waar ik moest troubleshooten.*
 
-- reboots probleem:
-script met alle methodes dat gesourced wordt door kleinere scripts die eindigen met een reboot
-powershell sourcen gaat bv,  ps C:\>. .\srv-AD.ps1
-- adds script gedeelte probleem:
-werkte niet als verwacht, reden was secure string declaratie
-- dhcp problemen:
-omdat vagrang en niet administrator de acties uitvoerd, mijn oplossing, cimsession gebruiken om als administrator die ene taak uit te voeren, plantaext pass is slecht maar bon..
-- nat probleem:
-remote access menu niet bruikbaar meer, iets over legacy mode, te wijzigen met registry key
+- adds probleem:  
+script gedeelte ervoor werkte niet als verwacht   
+-> reden was secure string declaratie, haakjes '()' nodig.
+- dhcp problemen:  
+omdat vagrant en niet administrator de acties uitvoerd om dhcp te configureren  
+-> cimsession gebruiken om als administrator die ene taak uit te voeren
+- nat probleem:  
+remote access menu niet bruikbaar meer  
+-> legacy mode instellen, te wijzigen met registry key
 sccm server nog geen lid van domein
-- geen internet met sccm: default gateway stond niet ingesteld
-- schema extenden gaat niet: omdat vagrant geen lid is van domain administrators
-- webserver prerequisite te fijne config nodig: xml geexporteerd, en opgezocht hoe te gebruiken
-- wsus install moeite met vinden juiste connection sting: niet intuitief: SRV-SCCM ipv SRV-SCCM\MSSQLSERVER, instance naam mag niet niet meegegeven worden
-- gpo's aangemaakt voor sql firewall settings, manueel aangemaakt, gebackupt om via het script op te roepen.
-- nat script gedeelte werkt niet na reboot, geen oplossing gevonden
-- gpo extra werk nodig: import-gpo ipv restore-gpo
-- wsus postinstall faalt, permissies op gedeelde wagrant map werken niet, lokaal wel
-- script nodig om log on user sql server te wijzigen, overgenomen van blogpost: thovan\vagrant niet genoeg permissies -> iets ssh
-thovan\administrator wel goed
-- script gemaakt om user aan te maken, rclick make script in mngmt studio
-- error naam sql server matcht niet:
-naam wijzigen gaat via stored procedure al in windows server 
- gebruikt
+- geen internet op sccm server:  
+-> default gateway stond niet ingesteld
+- schema extenden gaat niet:  
+-> omdat standaard gebruikersaccount vagrant geen lid is van domain administrators, credentials gebruiken
+- webserver prerequisite te fijne config nodig om te scripten:  
+-> als xml geexporteerd en opgezocht hoe XML config te gebruiken op AD server
+- Voor wsus install moeite met vinden juiste connection sting, niet intuitief:  
+-> SRV-SCCM ipv SRV-SCCM\MSSQLSERVER, instance naam mag niet niet meegegeven worden
+- gpo's sql firewall settings:  
+-> manueel aangemaakt, gebackupt om via het script op te roepen.
+- nat script gedeelte werkt niet na reboot:  
+-> geen oplossing gevonden, manueel instellen of andere manier vinden vinden voor NAT en dat scripten.
+- gebackupte gpo's kunnen niet hresteld worden:  
+-> import-gpo ipv restore-gpo gebruiken.
+- wsus postinstall faalt:  
+ -> permissies op gedeelde vagrant map volstaan niet, workaround is lokale map gebruiken.
+- script nodig om log on user sql server te wijzigen: 
+-> blogpost gevonden die het beschrijft, maar: thovan\vagrant niet genoeg permissies  (ssh error), thovan\administrator wel goed
+- script gemaakt om user aan te maken:  
+-> rclick make script in management studio
+- error, naam sql server matcht niet met hostname:  
+-> naam wijzigen gaat via stored procedure die ik reeds in windows server heb gebruikt
  - sccm omgeving configuratie: (zie script)
- - ad niet ontdekt > sccm forest zegt "insufficient rights" > controle niet correct gedelegeerd? > script aangepast, op afstand uitvoeren op srv-SCCM
- - domein controller wordt niet ontdekt: uitgesteld omdat het niet deel van de hoofdtaak uitmaakt
- - task sequence faalt: dhcp opties voor default route en dns server toevoegen
- - task sequence faalt: partitie error > task sequence opnieuw aanmaken, oude versie versie van boot images gebruikt, task sequence partitioning optie niet opgenomen, extra stappen aan script toegevoegd, niet gedaan door main new sequence stap
- - task sequence error (the task sequence cannot run because the program files for P0100001 cannot be located on a distribution poit): opgelost door user state migration uit te zetten
- - cannot access a disposed object bij het uittesten task sequence in powershell: alle task sequences verwijderen en server herstarten.. alt -> nieuwe powershell sessie starten, config mngr console afsluiten
-- partitionering fouten: verschil tussen manueel en via powershell aangemaakte task sequence, bij de powershell ts gebeurt er partitionering achter de schermen, zaols aanmaken van de recovery partitie, die ik dus niet moest opnemen (zie bron)
-- partitionering fout 2: 0x80070070 niet genoeg ruimte op partitie, op intuitie eerste bios partitie verwijderd, op task sequence van az glorieux is deze ook niet aanwezig -> werkt
-- applicaties niet kunnen toevoegen aan task sequence: deployment slecht ingesteld, moest isntall for system met whether or not user is logged on zijn ipv standaar isntall for user
-- unattended install genereren, windows system image manager faalt, verkeerde adk versie, error image zit in git repo
-- winrm error bij utiveoren volledig ad script met reboot plugin: winrm defaults verhogen? winrm authenticatie faalt omdat srv-AD domein controller is geworden? opgelost door basic winrm authenticatie te gebruiken en plaintext (zie bron)
-- script voor groepen toevoegen aan vagrant faalt: server meegeven, was niet nodig bij manuele uitvoering in powershell
-- reverse zone aanmaken faalt: niet belangrijk genoeg.. cimexception, uitoeren met cim sessie.. later in script uitvoeren?
-- provisioning faalt als NAT adapter uitgeschakeld wordt..: optie in commentaar zetten
-- setup.ini geeft fout over fqdn, niet indien manueel gedaan: setup.ini moet op valide netwerkpad staan
-- setup.ini heeft syntax fouten: product key moet ingesteld worden in script file -> EVAL in ons geval
-- sccm install via setup.ini maakt geen psdrive aan: aanmaken psdrive extra stap in script
-- content distribueren werkt niet in script: te vroeg na instalaltie door asynchrone taken? werkt adhv setup.ini install
-- boot image id is anders: variabelen voor aangemaakt
-- aangemaakte client wordt niet toegevoegd aan Widnows 10 device collection, zelf indien manueel gedaan
-- script gedeelte voor maken network access account faalt
+ - sccm forest zegt "insufficient rights"  
+ -> controle niet correct gedelegeerd? > script aangepast, wordt nu op afstand uitgevoerd op srv-SCCM via PSSession
+ - domein controller wordt niet ontdekt:  
+ -> uitgesteld omdat het niet deel van de hoofdtaak uitmaakt
+ - task sequence faalt in begin op client:  
+ -> dhcp opties voor default route en dns server toevoegen.
+ - task sequence faalt, partitie error:  
+ -> task sequence opnieuw aanmaken omdat partitioning optie niet opgenomen is zoals in de gui, extra partitionering stappen aan script toegevoegd, in cli "onzichtbare" extra partitionerings stap opgenomen waar rekening mee gehouden moet worden.
+ - task sequence error (the task sequence cannot run because the program files for P0100001 cannot be located on a distribution point):  
+-> opgelost door user state migration uit te zetten
+ - cannot access a disposed object bij het uittesten task sequence in powershell:  
+ (-> alle task sequences verwijderen uit sccm en server herstarten)  
+ -> nieuwe powershell sessie starten, config mngr console afsluiten.
+- partitionering fouten:  
+-> verschil tussen manueel en via powershell aangemaakte task sequence, bij de powershell ts gebeurt er partitionering achter de schermen, zoals aanmaken van de recovery partitie, die ik dus niet moest opnemen (zie bron)
+- partitionering fout 2, 0x80070070 niet genoeg ruimte op partitie  
+-> op intuitie eerste bios partitie verwijderd, op task sequence van az glorieux is deze ook niet aanwezig. Dit werkt.
+- applicaties niet kunnen toevoegen aan task sequence:  
+-> deployment slecht ingesteld, moest 'install for system met whether or not user is logged on' zijn ipv standaard 'isntall for user'
+- unattended install genereren, windows system image manager faalt  
+-> verkeerde adk versie, error image zit in git repo
+- winrm error bij uitvoeren volledig ad script met reboot plugin:  
+winrm defaults verhogen? winrm authenticatie faalt omdat srv-AD domein controller is geworden? 
+-> opgelost door basic winrm authenticatie te gebruiken en plaintext (zie bron)
+- script voor groepen toe te voegen aan vagrant faalt:  
+-> server meegeven, was niet nodig bij manuele uitvoering in powershell
+- reverse zone aanmaken faalt (cimexception):  
+-> niet belangrijk genoeg, uitvoeren met cim sessie? later in script uitvoeren?
+- provisioning faalt als NAT adapter uitgeschakeld wordt in provisioning script:  
+-> optie in commentaar zetten
+- setup.ini geeft fout over fqdn, niet indien manueel gedaan:  
+-> setup.ini moet op valide netwerkpad staan
+- setup.ini heeft syntax fouten:  
+-> product key moet ingesteld worden in script file, EVAL in ons geval
+- sccm install via setup.ini maakt geen psdrive aan:  
+-> aanmaken psdrive extra stap in script gemaakt.
+- content distribueren werkt niet in script:  
+-> te vroeg na installtie door asynchrone taken? nochthans juist ingesteld adhv setup.ini install. 30 min wachten lost het op
+- boot image id kan anders zijn na herinstallatie:  
+-> script flexibeler gemaakt door id eerst op te vragen en variabelen te gebruiken.
+- aangemaakte client wordt niet toegevoegd aan Widnows 10 device collection, zelf indien manueel gedaan:  
+-> Dit neemt tijd, script toegevoegd dat memberships van collection update.
+- script gedeelte voor maken network access account faalt:  
+-> slechte credentials wanneer gebruikt tijdens provisioning, geen oplossing gevonden.
+- task sequence 'disposedobjecterror' bij hergebruiken van secure string wachtwoord  
+-> een variabele aanmaken per gebruik. secure string kan niet hergebruikt worden.
+- na sccm isntall fouten bij oproepen sccm config script  
+-> bij silent install werd slechte psdrive aangemaakt, moest scope global meekrijgen om persistent te maken.
+- client wordt niet toegevoegd aan domein, applicaties niet geinstalleerd met exit code 617  
+-> [thovan\vagrant had niet de domein join permissies, thovan\administrator wel]
+- network access account maken werkt niet, valuelists prop is leeg  
+-> schema moet eerst geextend zijn + script aanpassing nodig om telkens nieuwe proplist aan te maken ipv onbestaande proberen te gebruiken
+- content kan niet gedistriburred worden naar ons distribution point  
+-> pas beschikbaar 15 min na installatie sccm, om dit op te vangen in script is hierop testen in loop een mogelijke oplossing
