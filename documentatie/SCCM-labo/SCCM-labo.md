@@ -414,8 +414,8 @@ Op te roepen via bv `node.vm.provision :reload` in de Vagrantfile. Compatibilite
 ![overzicht task sequence execution](/img/ts_exec_overzicht.JPG)
 
 3.  
-![domain membership](/img/membership.jpg)
-![working apps](/img/apps.jpg)
+![domain membership](/img/membership.JPG)
+![working apps](/img/apps.JPG)
 
 
 # Bronnen:
