@@ -58,7 +58,7 @@ basis configuratie uitvoeren op de netwerk interfaces.
 ipv6 uitschakelen en duidelijke namen toewijzen aan de nat en hostonly interface.
 
 ### 2. config_adds  
-We installeren de domain services en configureren een forest. De gekozen domeinnaam is 'thovan.gent'  
+We installeren de domain services en configureren een forest. De gekozen domeinnaam is 'thovan.gent'. Het wachtwoord kan enkel als Secure String meegegeven worden. Elders in de opstelling moet dit ook via deze manier gebeuren.  
 
   **REBOOT**
 
@@ -267,7 +267,7 @@ De client is een lege Windows 10 VM die we manueel aanmaken in Virtualbox. Hierb
 # Extra info: Vagrant
 
 * ModifyVM   
-In de `Vagrantfile` staat een methode 'extra_vbox_settings' die adhv het de tool 'modifyvm' enkele Virtualbox instellingen van de srv-AD en srv-SCCM wijzigt, het is interessant deze hier even te overlopen:
+In de `Vagrantfile` staat een methode 'extra_vbox_settings' die adhv het de tool 'modifyvm' enkele Virtualbox instellingen van de srv-AD en srv-SCCM wijzigt. Deze instellingen zijn niet essentieel maar zorgen voor een aangenamere (grafische) ervaring. Het is daarom interessant deze hier even te overlopen:
 
   ```ruby
   def extra_vbox_settings(vm)
@@ -406,11 +406,21 @@ Op te roepen via bv `node.vm.provision :reload` in de Vagrantfile. Compatibilite
 
 # Test rapport:
 
-[TODO]
+1. 
+[TODO]  
+
+2. 
+![in dev collection, client geinstalleerd](/img/client_in_sccm.JPG)
+![overzicht task sequence execution](/img/ts_exec_overzicht.JPG)
+
+3.  
+![domain membership](/img/membership.jpg)
+![working apps](/img/apps.jpg)
+
 
 # Bronnen:
 
-- [ansible-skeleton](https://github.com/bertvv/vagrant-shell-skeleton/)  
+- [vagrant skeleton bertvv](https://github.com/bertvv/vagrant-shell-skeleton/)  
 - [modifyvm cmd line tool](https://www.virtualbox.org/manual/ch08.html#vboxmanage-modifyvm-general)  
 - [silent install ADK and PXE](https://github.com/DeploymentResearch/DRFiles/blob/master/Scripts/Install-HYDWindowsADK10v1809.ps1)  
 - [Prajwail Desai nieuwe SCCM install gids](https://www.prajwaldesai.com/sccm-1902-install-guide-using-baseline-media/)  
@@ -420,7 +430,6 @@ Op te roepen via bv `node.vm.provision :reload` in de Vagrantfile. Compatibilite
 - [officieele docs voor unattended sccm isntall](https://docs.microsoft.com/en-us/sccm/core/servers/deploy/install/use-a-command-line-to-install-sites)  
 - [Officiele docs betreffend cimsession en credentials als workaround voor unattended dhcp install](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.security/get-credential?view=powershell-6)  
 - [system management container maken in powershell](http://justanothertechnicalblog.blogspot.com/2014/10/create-system-management-container-with.html)  
-
 - [Techniek om adhv .ini SCCM te installeren](https://msandbu.wordpress.com/2012/10/21/configuration-manager-2012-silent-install/)  
 - [Vorige maar van officiele MS docs, meer uitleg](https://docs.microsoft.com/en-us/sccm/core/servers/deploy/install/use-a-command-line-to-install-sites)  
 - [Hoe domain te joinen in via PS](https://www.petri.com/add-computer-to-domain-powershell)  
@@ -428,7 +437,7 @@ Op te roepen via bv `node.vm.provision :reload` in de Vagrantfile. Compatibilite
 - [Hoe de role install te repliceren adhv XML gegenereerd bij vorige install](https://dirteam.com/sander/2012/09/12/reusing-a-role-installation-xml-file-in-windows-server-2012-to-install-the-active-directory-domain-services-role/)  
 - [info over wat geldige SQL connection strings zijn](https://stackoverflow.com/questions/12336613/sql-network-interfaces-error-25-connection-string-is-not-valid-in-powershell)  
 - [handige plugin om mogelijk te kunnen rebooten tijdens provisioning](https://github.com/aidanns/vagrant-reload)  
-- [Hoe een GPO te back-uppen en later te importeren via PS](https://blog.netwrix.com/2019/04/11/top-10-group-policy-powershell-commands/)  
+- [Hoe een GPO te back-uppen en later te importeren via PS](https://blog.netwrix.com/2019/04/11/top-10-group-policy-powershell-commands/) 
 - [Hoe de reverse zone aanmaken in DNS via PS](https://adamtheautomator.com/powershell-dns/)  
 - [WSUS installeren en configureren via PS](https://devblogs.microsoft.com/scripting/installing-wsus-on-windows-server-2012/)  
 - [SQL Server log on account wijzigen via PS](https://devblogs.microsoft.com/scripting/use-powershell-to-change-sql-server-service-accounts/)  
