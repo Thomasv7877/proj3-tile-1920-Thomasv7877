@@ -43,8 +43,12 @@ function config_adds {
 # uitvoering
 
 function oproep_alle_functies {
+write-host "Configureren van basic interface settings"
 config_basics
+write-host "successvol -> $?"
+write-host "ADDS configureren"
 config_adds
+write-host "successvol -> $?"
 }
 
 oproep_alle_functies
